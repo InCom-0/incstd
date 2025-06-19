@@ -16,7 +16,7 @@ target_sources(incstd
         FILE_SET pub_headers
         TYPE HEADERS
         BASE_DIRS
-                include)
+                incl)
                 
 target_compile_features(incstd INTERFACE cxx_std_23)
 
