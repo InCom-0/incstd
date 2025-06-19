@@ -33,7 +33,7 @@ class _kcomb_iter {
         : iters{(std::next(begin, I))...}, end_iters{std::next(begin, I + (end - begin) - (K - 1))...} {}
 
 public:
-    using value_type        = std::pair<base_value_type, base_value_type>;
+    using value_type        = c_generateTuple<K, base_value_type>::type;
     using reference         = c_generateTuple<K, base_reference>::type;
     using difference_type   = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
