@@ -4,7 +4,7 @@ project(incstd)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using both vcpkg and CMake's FetchContent.
+include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
 
 add_library(incstd INTERFACE)
