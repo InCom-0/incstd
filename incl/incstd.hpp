@@ -8,6 +8,7 @@
 #include <incstd/parsers.hpp>
 #include <incstd/sequences.hpp>
 #include <incstd/typegen.hpp>
+#include <incstd/views.hpp>
 
 
 #ifndef INCOM_INCSTD_NAMESPACE_ALIAS
