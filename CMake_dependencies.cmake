@@ -2,7 +2,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     more_concepts
-    GIT_REPOSITORY https://github.com/MiSo1289/more_concepts.git
+    GIT_REPOSITORY https://github.com/InCom-0/more_concepts.git
     GIT_TAG origin/master
 )
 FetchContent_MakeAvailable(more_concepts)
