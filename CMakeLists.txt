@@ -4,6 +4,9 @@ project(incstd)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+set(XXHASH_BUILD_XXHSUM OFF)
+option(BUILD_SHARED_LIBS OFF)
+
 include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
 
