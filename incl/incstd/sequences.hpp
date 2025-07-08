@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <limits>
 
 #include <ankerl/unordered_dense.h>
 #include <more_concepts/more_concepts.hpp>
@@ -14,7 +15,8 @@ using namespace incom::standard;
 template <typename T, typename F>
 requires more_concepts::container<T> && std::predicate<F, std::vector<typename T::value_type>>
 auto build_map_uniqueSubSeq2startPos(T const &inputSequence, F filter_subSeq, int const min_occurenceOfUniqueSubseq = 1,
-                                     int const max_subSeqSize = INT_MAX, int const min_subSeqSize = 1) {
+                                     int const max_subSeqSize = std::numeric_limits<int>::max(), int const min_subSeqSize = 1) {
+                                        auto a = std::numeric_limits<int>::max();
     ankerl::unordered_dense::map<std::vector<typename T::value_type>,
                                  ankerl::unordered_dense::set<size_t, hashing::XXH3Hasher>, hashing::XXH3Hasher>
         mapToBuild;
@@ -64,7 +66,7 @@ template <typename T>
 requires more_concepts::container<T>
 // Overload: No filter of subsequences
 auto build_map_uniqueSubSeq2startPos(T const &inputSequence, int const min_occurenceOfUniqueSubseq = 1,
-                                     int const max_subSeqSize = INT_MAX, int const min_subSeqSize = 1) {
+                                     int const max_subSeqSize = std::numeric_limits<int>::max(), int const min_subSeqSize = 1) {
     return build_map_uniqueSubSeq2startPos(
         inputSequence, [](std::vector<typename T::value_type> const &a) { return true; }, min_occurenceOfUniqueSubseq,
         min_subSeqSize, max_subSeqSize);
@@ -72,11 +74,11 @@ auto build_map_uniqueSubSeq2startPos(T const &inputSequence, int const min_occur
 
 namespace solvers {
 template <typename T, typename F, size_t max_numOfRes = 1, size_t min_repCountOfUnique = 1,
-          size_t max_repCountOfUnique = SIZE_MAX>
+          size_t max_repCountOfUnique = std::numeric_limits<size_t>::max()>
 requires more_concepts::container<T> && std::predicate<F, std::vector<typename T::value_type>>
 auto solve_seqFromRepUniqueSubseq(T const &inputSequence, F const filter_subSeq,
-                                  int const max_ofUniqueSubseqInRes = INT_MAX, int const min_ofUniqueSubseqInRes = 1,
-                                  int min_occurenceOfUniqueSubseq = 1, int const max_subSeqSize = INT_MAX,
+                                  int const max_ofUniqueSubseqInRes = std::numeric_limits<int>::max(), int const min_ofUniqueSubseqInRes = 1,
+                                  int min_occurenceOfUniqueSubseq = 1, int const max_subSeqSize = std::numeric_limits<int>::max(),
                                   int const min_subSeqSize = 1)
     -> std::optional<std::vector<std::vector<std::vector<typename T::value_type>>>> {
 
@@ -165,12 +167,12 @@ auto solve_seqFromRepUniqueSubseq(T const &inputSequence, F const filter_subSeq,
         else { return res_storage; }
     }
 }
-template <typename T, size_t max_numOfRes = 1, size_t min_repCountOfUnique = 1, size_t max_repCountOfUnique = SIZE_MAX>
+template <typename T, size_t max_numOfRes = 1, size_t min_repCountOfUnique = 1, size_t max_repCountOfUnique = std::numeric_limits<size_t>::max()>
 requires more_concepts::container<T>
 // Overload: No filter of subsequences
-auto solve_seqFromRepUniqueSubseq(T const &inputSequence, int const max_ofUniqueSubseqInRes = INT_MAX,
+auto solve_seqFromRepUniqueSubseq(T const &inputSequence, int const max_ofUniqueSubseqInRes = std::numeric_limits<int>::max(),
                                   int const min_ofUniqueSubseqInRes = 1, int min_occurenceOfUniqueSubseq = 1,
-                                  int const max_subSeqSize = INT_MAX, int const min_subSeqSize = 1) {
+                                  int const max_subSeqSize = std::numeric_limits<int>::max(), int const min_subSeqSize = 1) {
     auto funcToPass = [](std::vector<typename T::value_type> const &a) { return true; };
     return solve_seqFromRepUniqueSubseq<T, decltype(funcToPass), max_numOfRes, min_repCountOfUnique,
                                         max_repCountOfUnique>(inputSequence, funcToPass, max_ofUniqueSubseqInRes,
