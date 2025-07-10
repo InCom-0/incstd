@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <ranges>
@@ -23,20 +24,15 @@ auto compute_variance(T &range) {
     v_t    sum   = 0;
     size_t count = 0;
 
-    for (auto const &tpl : range) {
-        if (std::get<0>(tpl) == 0u) {
-            sum += std::get<1>(tpl);
-            count++;
-        }
+    for (auto const &item : range) {
+        sum += item;
+        count++;
     }
 
-    v_t const avg   = sum / count;
-    v_t       sumsq = 0;
-    for (auto const &tpl : range) {
-        if (std::get<0>(tpl) == 0u) { sumsq += std::pow((std::get<1>(tpl)) - avg, 2); }
-    }
-
-    return (static_cast<double>(sumsq) / count);
+    v_t const avg = sum / count;
+    return (static_cast<double>(std::ranges::fold_left(
+                range, v_t{0}, [&](v_t accu, auto const &item) { return accu + std::pow((item - avg), 2); })) /
+            count);
 }
 
 template <typename T>
