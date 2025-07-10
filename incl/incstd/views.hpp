@@ -42,6 +42,7 @@ public:
 
     [[nodiscard]] constexpr _kcomb_iter(base_iterator begin, base_sentinel end) : _kcomb_iter(idxSeq, begin, end) {}
 
+    // Prefix increment
     constexpr auto operator++() -> _kcomb_iter & {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...> seq) -> void {
             auto lamRev = [&]<size_t... Js>(std::integer_sequence<size_t, Js...> revSeq) -> void {
@@ -65,7 +66,8 @@ public:
         lam(idxSeq);
         return *this;
     }
-
+    
+    // Postfix increment
     [[nodiscard]] constexpr auto operator++(int) -> _kcomb_iter {
         const auto pre = *this;
         ++(*this);

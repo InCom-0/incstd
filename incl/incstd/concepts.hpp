@@ -26,4 +26,11 @@ concept is_some_pair = requires(std::remove_cvref_t<T> pair) {
 };
 template <std::size_t N>
 concept is_power_of2 = ((N != 0) && ! (N & (N - 1)));
+
+
+template<typename T>
+concept has_size_mf = requires {
+    typename T::size_type;
+    { std::declval<T>().size() } -> std::same_as<typename T::size_type>;
+};
 } // namespace incom::standard::concepts
