@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iterator>
-#include <limits>
 #include <ranges>
 #include <utility>
 
@@ -44,9 +43,9 @@ public:
 
     // Prefix increment
     constexpr auto operator++() -> _kcomb_iter & {
-        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...> seq) -> void {
-            auto lamRev = [&]<size_t... Js>(std::integer_sequence<size_t, Js...> revSeq) -> void {
-                std::array<bool, sizeof...(Is)> idAtLastPos{(Is == std::numeric_limits<size_t>::max())...};
+        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
+            auto lamRev = [&]<size_t... Js>(std::integer_sequence<size_t, Js...>) -> void {
+                std::array<bool, sizeof...(Is)> idAtLastPos{(Is, false)...};
 
                 if (((std::next(std::get<Js>(iters)) == std::get<Js>(end_iters) ? (idAtLastPos[Js] = true, true)
                                                                                 : (std::get<Js>(iters)++, false)) &&
@@ -55,7 +54,7 @@ public:
                     return;
                 }
 
-                base_iterator *ptr = &(std::get<0>(iters));
+                base_iterator *ptr;
                 (((idAtLastPos[Is] == true && Is > 0) ? std::get<Is>(iters) = std::next(*ptr),
                   ptr = &(std::get<Is>(iters))        : ptr = &std::get<Is>(iters)),
                  ...);
@@ -66,7 +65,7 @@ public:
         lam(idxSeq);
         return *this;
     }
-    
+
     // Postfix increment
     [[nodiscard]] constexpr auto operator++(int) -> _kcomb_iter {
         const auto pre = *this;
@@ -75,8 +74,8 @@ public:
     }
 
     [[nodiscard]] constexpr auto operator*() const -> reference {
-        auto lam = [&]<size_t... I>(std::integer_sequence<size_t, I...> seq) -> reference {
-            return {(*(std::get<I>(iters)))...};
+        auto lam = [&]<size_t... I>(std::integer_sequence<size_t, I...>) -> reference {
+            return std::tie((*(std::get<I>(iters)))...);
         };
         return lam(idxSeq);
     }
