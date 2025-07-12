@@ -2,10 +2,9 @@
 
 #include <iterator>
 #include <limits>
-#include <ranges>
-#include <utility>
 
 #include <incstd/typegen.hpp>
+#include <utility>
 
 namespace incom::standard::views {
 namespace detail {
@@ -22,8 +21,8 @@ class _kcomb_iter {
     using base_value_type = std::ranges::range_value_t<RANGE>;
     using base_reference  = std::ranges::range_reference_t<RANGE>;
 
-    c_generateTuple<K, base_iterator>::type iters;
-    c_generateTuple<K, base_sentinel>::type end_iters;
+    std::array<base_iterator, K> iters;
+    std::array<base_sentinel, K> end_iters;
 
     static constexpr auto idxSeq     = std::make_index_sequence<K>{};
     static constexpr auto idxSeq_rev = transform_integer_sequence<std::views::reverse, decltype(idxSeq)>{};
@@ -45,25 +44,22 @@ public:
     // Prefix increment
     constexpr auto operator++() -> _kcomb_iter & {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
-            auto lamRev = [&]<size_t... Js>(std::integer_sequence<size_t, Js...>) -> void {
-                std::array<bool, sizeof...(Is)> idAtLastPos{(Is == std::numeric_limits<size_t>::max())...};
-
-                if (((std::next(std::get<Js>(iters)) == std::get<Js>(end_iters) ? (idAtLastPos[Js] = true, true)
-                                                                                : (std::get<Js>(iters)++, false)) &&
-                     ...)) {
-                    ((std::get<Is>(iters) = std::get<Is>(end_iters)), ...);
-                    return;
+            size_t firstIncremID = 0;
+            if (((std::next(iters[Is]) == end_iters[Is] ? (true) : (iters[Is]++, firstIncremID = Is, false)) && ...)) {
+                ((iters[Is] = end_iters[Is]), ...);
+                return;
+            }
+            else {
+                base_iterator *ptr = &(iters[firstIncremID]);
+                for (size_t upIDs = (firstIncremID + 1); upIDs < sizeof...(Is); ++upIDs) {
+                    (iters[upIDs]) = std::next(iters[upIDs - 1]);
                 }
-
-                base_iterator *ptr;
-                (((idAtLastPos[Is] == true && Is > 0) ? std::get<Is>(iters) = std::next(*ptr),
-                  ptr = &(std::get<Is>(iters))        : ptr = &std::get<Is>(iters)),
-                 ...);
-            };
-
-            lamRev(idxSeq_rev);
+                return;
+            }
+            std::unreachable();
         };
-        lam(idxSeq);
+
+        lam(idxSeq_rev);
         return *this;
     }
 
@@ -75,8 +71,8 @@ public:
     }
 
     [[nodiscard]] constexpr auto operator*() const -> reference {
-        auto lam = [&]<size_t... I>(std::integer_sequence<size_t, I...>) -> reference {
-            return std::tie((*(std::get<I>(iters)))...);
+        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> reference {
+            return std::tie((*((iters[Is])))...);
         };
         return lam(idxSeq);
     }
@@ -84,8 +80,8 @@ public:
     [[nodiscard]] constexpr auto operator<=>(const _kcomb_iter &) const = default;
 
     [[nodiscard]] constexpr auto operator==(const _kcomb_sentinel<RANGE> & /*unused*/) const -> bool {
-        auto lam = [&]<size_t... I>(std::integer_sequence<size_t, I...> seq) -> bool {
-            return ((std::get<I>(iters) == std::get<I>(end_iters) ? (true) : false) && ...);
+        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...> seq) -> bool {
+            return ((iters[Is] == end_iters[Is] ? (true) : false) && ...);
         };
         return lam(idxSeq);
     }
