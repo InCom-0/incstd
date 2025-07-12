@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <limits>
 #include <ranges>
 #include <utility>
 
@@ -45,7 +46,7 @@ public:
     constexpr auto operator++() -> _kcomb_iter & {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
             auto lamRev = [&]<size_t... Js>(std::integer_sequence<size_t, Js...>) -> void {
-                std::array<bool, sizeof...(Is)> idAtLastPos{(Is, false)...};
+                std::array<bool, sizeof...(Is)> idAtLastPos{(Is == std::numeric_limits<size_t>::max())...};
 
                 if (((std::next(std::get<Js>(iters)) == std::get<Js>(end_iters) ? (idAtLastPos[Js] = true, true)
                                                                                 : (std::get<Js>(iters)++, false)) &&
