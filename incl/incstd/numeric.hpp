@@ -28,10 +28,9 @@ auto compute_variance(T &range) {
         sum += item;
         count++;
     }
-
-    v_t const avg = sum / count;
+    double const avg = static_cast<double>(sum) / count;
     return (static_cast<double>(std::ranges::fold_left(
-                range, v_t{0}, [&](v_t accu, auto const &item) { return accu + std::pow((item - avg), 2); })) /
+                range, 0.0, [&](double accu, auto const &item) { return accu + std::pow((item - avg), 2); })) /
             count);
 }
 
