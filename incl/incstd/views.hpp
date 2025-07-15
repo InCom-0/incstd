@@ -1,10 +1,10 @@
 #pragma once
 
-#include <iterator>
-#include <limits>
 
 #include <incstd/typegen.hpp>
+#include <ranges>
 #include <utility>
+
 
 namespace incom::standard::views {
 namespace detail {
@@ -15,6 +15,7 @@ template <std::ranges::forward_range RANGE>
 struct _kcomb_sentinel {};
 
 template <std::ranges::forward_range RANGE, size_t K>
+requires(K > 1)
 class _kcomb_iter {
     using base_iterator   = std::ranges::iterator_t<RANGE>;
     using base_sentinel   = std::ranges::sentinel_t<RANGE>;
@@ -41,7 +42,10 @@ public:
 
     [[nodiscard]] constexpr _kcomb_iter(base_iterator begin, base_sentinel end) : _kcomb_iter(idxSeq, begin, end) {}
 
-    // Prefix increment
+
+
+    // TODO: Explore possibility of turning it into a coroutine somehow
+    //  Prefix increment
     constexpr auto operator++() -> _kcomb_iter & {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
             size_t firstIncremID = 0;
@@ -88,7 +92,7 @@ public:
 };
 
 template <std::ranges::forward_range RANGE, size_t K>
-requires std::ranges::view<RANGE>
+requires std::ranges::view<RANGE> && (K > 1)
 class _kcomb_view : public std::ranges::view_interface<_kcomb_view<RANGE, K>> {
     RANGE base_;
 
@@ -118,6 +122,7 @@ struct _kcomb_fn : std::ranges::range_adaptor_closure<_kcomb_fn<K>> {
 } // namespace detail
 
 template <size_t K>
+requires(K > 1)
 constexpr inline detail::_kcomb_fn<K> combinations_k;
 
 

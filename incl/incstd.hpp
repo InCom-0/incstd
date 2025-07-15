@@ -4,6 +4,7 @@
 #include <incstd/buffers.hpp>
 #include <incstd/concepts.hpp>
 #include <incstd/containers.hpp>
+#include <incstd/coroutines.hpp>
 #include <incstd/matrix.hpp>
 #include <incstd/numeric.hpp>
 #include <incstd/parsers.hpp>

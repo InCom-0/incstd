@@ -61,6 +61,8 @@ public:
                other._iter_underlying_beg == _iter_underlying_beg && other._sentinel_underlying == _sentinel_underlying;
     }
 
+    auto operator<=>(const _RingVector_iter<T> &other) const = default;
+
     auto operator==(const _RingVector_sentinel<T> &) const -> bool { return (circled == true && _iter == _sentinel); }
 };
 
