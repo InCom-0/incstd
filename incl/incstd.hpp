@@ -5,6 +5,7 @@
 #include <incstd/concepts.hpp>
 #include <incstd/containers.hpp>
 #include <incstd/coroutines.hpp>
+#include <incstd/filesys.hpp>
 #include <incstd/matrix.hpp>
 #include <incstd/numeric.hpp>
 #include <incstd/parsers.hpp>
