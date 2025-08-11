@@ -3,6 +3,7 @@
 #include <concepts>
 #include <ranges>
 #include <utility>
+#include <typeinfo>
 
 
 namespace incom::standard::typegen {
@@ -74,4 +75,14 @@ auto build_sequence(std::integer_sequence<INT, Is...>) {
 template <auto view, typename Sequence>
 using transform_integer_sequence = decltype(detail::build_sequence<view>(Sequence{}));
 
+
 } // namespace incom::standard::typegen
+
+namespace incom::standard::typeinfo {
+using namespace incom::standard;
+
+template <typename T>
+consteval std::size_t get_typeInfoHash(T const) {
+    return typeid(T).hash_code();
+}
+} // namespace incom::standard::typeinfo
