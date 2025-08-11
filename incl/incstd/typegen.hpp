@@ -77,12 +77,3 @@ using transform_integer_sequence = decltype(detail::build_sequence<view>(Sequenc
 
 
 } // namespace incom::standard::typegen
-
-namespace incom::standard::typeinfo {
-using namespace incom::standard;
-
-template <typename T>
-consteval std::size_t get_typeInfoHash(T const) {
-    return typeid(T).hash_code();
-}
-} // namespace incom::standard::typeinfo
