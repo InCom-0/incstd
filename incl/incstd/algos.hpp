@@ -97,5 +97,51 @@ auto compute_deep_applyAndFold(auto const &&onto, auto const &&applier_func, aut
     return init;
 }
 
+// Not actual sorting, just give the user sorted indices into original ranges. 
+// func_sorterComp operates on tuples of <const & RNGs...> (through projection) but physically sorts tuples of
+// <size_t,std::reference_wrapper()...> Outputs sorted indices into the original rngs
+template <typename... RNGs>
+requires(sizeof...(RNGs) > 0) && (std::ranges::range<RNGs>, ...)
+std::vector<size_t> compute_sortedIDXs(auto func_sorterComp, RNGs const &...rngs) {
+    auto lam_IS = [&]<size_t... idxs>(std::index_sequence<idxs...>) -> std::vector<size_t> {
+        auto filteredVec = std::views::zip(std::views::iota(0uz), rngs...) | std::views::transform([](auto const &tpl) {
+                               return std::tuple(std::get<0>(tpl), std::ref(std::get<idxs + 1>(tpl))...);
+                           }) |
+                           std::ranges::to<std::vector>();
+
+        std::ranges::sort(filteredVec, func_sorterComp,
+                          [&](auto const &tpl) { return std::tie(std::get<idxs + 1>(tpl).get()...); });
+
+        return std::views::transform(filteredVec, [](auto const &tpl_item) { return std::get<0>(tpl_item); }) |
+               std::ranges::to<std::vector>();
+    };
+
+    return lam_IS(std::make_index_sequence<sizeof...(RNGs)>{});
+}
+
+// Not actual sorting, just give the user sorted indices into original ranges. 
+// func_filter operates on tuples of <size_t, RNGs...>. Means the first element is automatically added to be the index.
+// func_sorterComp operates on tuples of <const & RNGs...> (through projection) but physically sorts tuples of <size_t,
+// std::reference_wrapper()...> Outputs sorted indices into the original rngs
+template <typename... RNGs>
+requires(sizeof...(RNGs) > 0) && (std::ranges::range<RNGs>, ...)
+std::vector<size_t> compute_filterSortedIDXs(auto func_filter, auto func_sorterComp, RNGs const &...rngs) {
+    auto lam_IS = [&]<size_t... idxs>(std::index_sequence<idxs...>) -> std::vector<size_t> {
+        auto filteredVec = std::views::zip(std::views::iota(0uz), rngs...) | std::views::filter(func_filter) |
+                           std::views::transform([](auto const &tpl) {
+                               return std::tuple(std::get<0>(tpl), std::ref(std::get<idxs + 1>(tpl))...);
+                           }) |
+                           std::ranges::to<std::vector>();
+
+        std::ranges::sort(filteredVec, func_sorterComp,
+                          [&](auto const &tpl) { return std::tie(std::get<idxs + 1>(tpl).get()...); });
+
+        return std::views::transform(filteredVec, [](auto const &tpl_item) { return std::get<0>(tpl_item); }) |
+               std::ranges::to<std::vector>();
+    };
+
+    return lam_IS(std::make_index_sequence<sizeof...(RNGs)>{});
+}
+
 
 } // namespace incom::standard::algos
