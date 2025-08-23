@@ -2,8 +2,8 @@
 
 #include <concepts>
 #include <ranges>
+#include <typeindex>
 #include <utility>
-#include <typeinfo>
 
 
 namespace incom::standard::typegen {
@@ -74,6 +74,16 @@ auto build_sequence(std::integer_sequence<INT, Is...>) {
 // We define an alias that builds the std::integer_sequence result from a call to build_sequence
 template <auto view, typename Sequence>
 using transform_integer_sequence = decltype(detail::build_sequence<view>(Sequence{}));
+
+
+template <typename T>
+constexpr auto get_typeIndex() {
+    return std::type_index(typeid(T));
+}
+template <typename T>
+constexpr auto get_typeIndex(T) {
+    return std::type_index(typeid(T));
+}
 
 
 } // namespace incom::standard::typegen
