@@ -19,12 +19,6 @@ struct VariantUtility {
         (res.insert({typegen::get_typeIndex<Ts>(), std::variant<Ts...>(Ts(std::forward<decltype(ptc)>(ptc)...))}), ...);
         return res;
     };
-
-    static constexpr inline auto gen_typeMap() {
-        std::unordered_map<std::type_index, const std::variant<Ts...>> res;
-        (res.insert({typegen::get_typeIndex<Ts>(), std::variant<Ts...>(Ts())}), ...);
-        return res;
-    };
 };
 
 
