@@ -4,11 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <expected>
-#include <filesystem>
-#include <fstream>
-#include <optional>
 #include <regex>
-#include <sstream>
 #include <string>
 #include <string_view>
 
@@ -22,9 +18,8 @@
 #include <unistd.h>
 #endif
 
-#include "console_common.hpp"
 #include "colorschemes.hpp"
-
+#include "console_common.hpp"
 
 
 namespace incom::standard::console {
@@ -50,7 +45,7 @@ public:
         return campbellColor(index);
 #else
         auto res = queryPaletteIndexPosix(index);
-        return res ? *res : campbellColor(index);
+        return res ? *res : defaultColor(index);
 #endif
     }
 
@@ -68,7 +63,7 @@ public:
         return campbellColor(7);
 #else
         auto res = queryForegroundPosix();
-        return res ? *res : campbellColor(7);
+        return res ? *res : defaultColor(7);
 #endif
     }
 
@@ -86,7 +81,7 @@ public:
         return campbellColor(0);
 #else
         auto res = queryBackgroundPosix();
-        return res ? *res : campbellColor(0);
+        return res ? *res : defaultColor(0);
 #endif
     }
 
@@ -98,28 +93,16 @@ public:
             colors[i] = campbellColor(i);
 #else
             auto res  = queryPaletteIndexPosix(i);
-            colors[i] = res ? *res : campbellColor(i);
+            colors[i] = res ? res.value() : defaultColor(i);
 #endif
         }
         return colors;
     }
 
-    [[nodiscard]] static constexpr std::string_view to_string(err_terminal e) noexcept {
-        using namespace std::literals;
-        switch (e) {
-            case err_terminal::NoTerminal:  return "NoTerminal"sv;
-            case err_terminal::IoError:     return "IoError"sv;
-            case err_terminal::Timeout:     return "Timeout"sv;
-            case err_terminal::ParseError:  return "ParseError"sv;
-            case err_terminal::Unsupported: return "Unsupported"sv;
-        }
-        return "Unknown"sv;
-    }
-
     // direct Campbell color
-    [[nodiscard]] static constexpr inc_sRGB campbellColor(int index) noexcept {
+    [[nodiscard]] static constexpr inc_sRGB defaultColor(int index) noexcept {
         if (! index16_valid(index)) { return inc_sRGB{255, 255, 255}; }
-        return color_schemes::windows_terminal::campbell.palette[index];
+        return color_schemes::defaultScheme16.palette[index];
     }
 
 private:
@@ -228,14 +211,16 @@ private:
 
     static constexpr std::expected<std::string, err_terminal> send_osc_and_read(const std::string &osc,
                                                                                 int timeoutMs = 500) noexcept {
-        if (! isatty(STDOUT_FILENO) && ! isatty(STDIN_FILENO)) { return std::unexpected(err_terminal::NoTerminal); }
+        if (not isatty(STDOUT_FILENO) && not isatty(STDIN_FILENO) && not isatty(STDERR_FILENO)) {
+            return std::unexpected(err_terminal::NoTerminal);
+        }
         uniq_fd tty(::open("/dev/tty", O_RDWR | O_NOCTTY));
         if (! tty.valid()) { return std::unexpected(err_terminal::NoTerminal); }
         if (! write_all(tty.get(), osc.data(), osc.size())) { return std::unexpected(err_terminal::IoError); }
         return read_reply_from_tty(tty.get(), timeoutMs);
     }
 
-    static constexpr std::expected<TC_RBG, err_terminal> parse_color_from_reply(std::string reply) noexcept {
+    static constexpr std::expected<inc_sRGB, err_terminal> parse_color_from_reply(std::string reply) noexcept {
         while (! reply.empty() && (reply.back() == '\r' || reply.back() == '\n')) { reply.pop_back(); }
 
         static std::regex rx_rgb(R"(rgb:([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4}))");
@@ -248,16 +233,16 @@ private:
                 if (v > 0xFF) { v /= 257; }
                 return static_cast<std::uint8_t>(v);
             };
-            return TC_RBG{to8(m[1].str()), to8(m[2].str()), to8(m[3].str())};
+            return inc_sRGB{to8(m[1].str()), to8(m[2].str()), to8(m[3].str())};
         }
         if (std::regex_search(reply, m, rx_hash)) {
-            std::string_view hex   = m[1].str();
-            auto             from2 = [&](int off) {
+            std::string hex   = m[1].str();
+            auto        from2 = [&](int off) {
                 unsigned v = 0;
                 std::from_chars(hex.data() + off, hex.data() + off + 2, v, 16);
                 return static_cast<std::uint8_t>(v);
             };
-            return TC_RBG{from2(0), from2(2), from2(4)};
+            return inc_sRGB{from2(0), from2(2), from2(4)};
         }
         return std::unexpected(err_terminal::ParseError);
     }

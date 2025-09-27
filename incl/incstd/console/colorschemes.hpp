@@ -20,6 +20,7 @@ struct scheme256 {
     inc_sRGB   selection;
 };
 
+
 namespace windows_terminal {
 
 inline constexpr scheme16 campbell{
@@ -168,4 +169,6 @@ inline constexpr scheme16 campbell_powershell{
 
 
 } // namespace windows_terminal
+
+inline constexpr scheme16 const &defaultScheme16 = windows_terminal::campbell;
 } // namespace incom::standard::console::color_schemes
