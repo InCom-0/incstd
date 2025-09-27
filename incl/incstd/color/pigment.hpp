@@ -28,7 +28,6 @@
 #include <array>
 #include <cmath>
 #include <concepts>
-#include <expected>
 #include <iomanip>
 #include <optional>
 #include <sstream>

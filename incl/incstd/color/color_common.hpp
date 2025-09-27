@@ -17,20 +17,4 @@ using palette16  = std::array<inc_sRGB, 16>;
 using palette256 = std::array<inc_sRGB, 256>;
 
 
-struct scheme16 {
-    palette16 palette;
-    inc_sRGB foreground;
-    inc_sRGB backgrond;
-    inc_sRGB cursor;
-    inc_sRGB selection;
-};
-struct scheme256 {
-    palette256 palette;
-    inc_sRGB  foreground;
-    inc_sRGB  backgrond;
-    inc_sRGB  cursor;
-    inc_sRGB  selection;
-};
-
-
 } // namespace incom::standard::color
