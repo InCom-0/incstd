@@ -1,6 +1,6 @@
 #pragma once
 
-#include <incstd/color/common.hpp>
+#include <incstd/color/color_common.hpp>
 
 namespace incom::standard::console::color_schemes {
 

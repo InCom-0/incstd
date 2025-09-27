@@ -27,16 +27,18 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <concepts>
 #include <iomanip>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "common.hpp"
+#include "color_common.hpp"
 
 
 namespace incom::standard::color {
@@ -206,6 +208,8 @@ inline constexpr std::array<inc_lRGB, 3> LAB_LMS = {{{1.0, 0.3963377773761749, 0
                                                      {1.0, -0.0894841775298119, -1.2914855480194092}}};
 } // namespace CONVERSION
 
+
+// CONCEPTS AND TYPE TRAITS
 // Primary template: defaults to false
 template <typename T>
 struct is_std_array : std::false_type {};
@@ -225,7 +229,7 @@ concept _is_matrix_and_range =
 template <typename M, typename V>
 concept _is_matrixArray_and_range = _is_matrix_and_range<M, V> && is_std_array_v<M>;
 
-
+// COMPUTATIONAL HELPER FUNCTIONS
 template <typename M, typename V>
 requires _is_matrixArray_and_range<M, V> && is_std_array_v<V>
 inline constexpr auto mulMatVec(M const &matrix, V const &vec) -> std::array<double, std::tuple_size<M>{}> {
@@ -359,7 +363,9 @@ public:
     void *operator new(std::size_t, void *) = delete; // blocked placement-new
 };
 
-// 'Fat' color class
+// #######################################
+// ### 'FAT' COLOR CLASS      ######
+// #######################################
 class Color {
 public:
     // Public data
@@ -370,7 +376,7 @@ public:
 
     // Tinting strength (default 1)
     double tintingStrength = 1.0;
-    double _luminance      = 0.0;
+    double luminance       = 0.0;
 
 private:
     // Lazy-computed caches
@@ -381,43 +387,43 @@ private:
 public:
     // Constructors
     Color(const std::string &css) {
-        auto c     = Converter::parseCssColor(css);
-        sRGB       = {c[0], c[1], c[2]};
-        lRGB       = Converter::sRGB_to_lRGB(sRGB);
-        R          = Converter::parseSpectralReflectanceFromLRGB(lRGB);
-        XYZ        = Converter::lRGB_to_XYZ(lRGB);
-        _luminance = std::max(XYZ[1], detail::EPS_MIN);
+        auto c    = Converter::parseCssColor(css);
+        sRGB      = {c[0], c[1], c[2]};
+        lRGB      = Converter::sRGB_to_lRGB(sRGB);
+        R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
+        XYZ       = Converter::lRGB_to_XYZ(lRGB);
+        luminance = std::max(XYZ[1], detail::EPS_MIN);
     }
     Color(const inc_sRGB &srgb_) {
-        sRGB       = srgb_;
-        lRGB       = Converter::sRGB_to_lRGB(sRGB);
-        R          = Converter::parseSpectralReflectanceFromLRGB(lRGB);
-        XYZ        = Converter::lRGB_to_XYZ(lRGB);
-        _luminance = std::max(XYZ[1], detail::EPS_MIN);
+        sRGB      = srgb_;
+        lRGB      = Converter::sRGB_to_lRGB(sRGB);
+        R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
+        XYZ       = Converter::lRGB_to_XYZ(lRGB);
+        luminance = std::max(XYZ[1], detail::EPS_MIN);
     }
     Color(const inc_lRGB &lrgb_) {
-        sRGB       = Converter::lRGB_to_sRGB(lrgb_);
-        lRGB       = lrgb_;
-        R          = Converter::parseSpectralReflectanceFromLRGB(lRGB);
-        XYZ        = Converter::lRGB_to_XYZ(lRGB);
-        _luminance = std::max(XYZ[1], detail::EPS_MIN);
+        sRGB      = Converter::lRGB_to_sRGB(lrgb_);
+        lRGB      = lrgb_;
+        R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
+        XYZ       = Converter::lRGB_to_XYZ(lRGB);
+        luminance = std::max(XYZ[1], detail::EPS_MIN);
     }
     Color(const std::vector<double> &spectralR) {
         if ((int)spectralR.size() != detail::SAMPLE_SIZE) {
             throw std::invalid_argument("spectralR must have length SIZE");
         }
         for (size_t i = 0; auto &r_item : R) { r_item = spectralR[i++]; }
-        XYZ        = detail::mulMatVec(detail::CIE::CMF, R);
-        lRGB       = Converter::XYZ_to_lRGB(XYZ);
-        sRGB       = Converter::lRGB_to_sRGB(lRGB);
-        _luminance = std::max(XYZ[1], detail::EPS_MIN);
+        XYZ       = detail::mulMatVec(detail::CIE::CMF, R);
+        lRGB      = Converter::XYZ_to_lRGB(XYZ);
+        sRGB      = Converter::lRGB_to_sRGB(lRGB);
+        luminance = std::max(XYZ[1], detail::EPS_MIN);
     }
     Color(const arr_dbl38 &spectralR) {
-        R          = spectralR;
-        XYZ        = detail::mulMatVec(detail::CIE::CMF, R);
-        lRGB       = Converter::XYZ_to_lRGB(XYZ);
-        sRGB       = Converter::lRGB_to_sRGB(lRGB);
-        _luminance = std::max(XYZ[1], detail::EPS_MIN);
+        R         = spectralR;
+        XYZ       = detail::mulMatVec(detail::CIE::CMF, R);
+        lRGB      = Converter::XYZ_to_lRGB(XYZ);
+        sRGB      = Converter::lRGB_to_sRGB(lRGB);
+        luminance = std::max(XYZ[1], detail::EPS_MIN);
     }
 
     // Getters
@@ -437,8 +443,6 @@ public:
         }
         return _KS.value();
     }
-
-    double luminance() const { return _luminance; }
 
     // Methods
 private:
@@ -482,21 +486,50 @@ public:
 // ### 'PIGMENT' COLOR MIXING      ######
 // #######################################
 //
-// Based on Kubelka-Munk theory
 // Suitable when it is desirable to imitate mixing colours 'as-if' they were real world pigments
+// Based on Kubelka-Munk theory (https://en.wikipedia.org/wiki/Kubelka%E2%80%93Munk_theory)
 // https://en.wikipedia.org/wiki/Pigment
 namespace pigment {
-constexpr inc_lRGB mix_lRBG_f(const std::vector<std::pair<inc_lRGB, double>> &colors_srgb_f);
 
-constexpr inc_sRGB mix_sRBG_f(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f);
+// Color class blending
+constexpr Color blend(const std::vector<Color> &colors);
 
-constexpr inc_sRGB mix_sRBG_f(const std::vector<inc_sRGB> &colors_srgb);
+template <typename... Cs>
+requires(sizeof...(Cs) > 1) && (std::same_as<std::remove_cvref_t<Cs>, Color> && ...)
+constexpr Color blend(const Cs &...colors);
 
-inline constexpr inc_sRGB mix_sRBG_f(const std::pair<inc_sRGB, double> &color1_srgb_f,
-                                     const std::pair<inc_sRGB, double> &color2_srgb_f);
 
-inline constexpr inc_sRGB mix_sRBG_f(const inc_sRGB &color1_srgb, const inc_sRGB &color2_srgb,
-                                     const double factor1 = 1.0, const double factor2 = 1.0);
+// L_RGB blending
+constexpr inc_lRGB blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f);
+constexpr inc_lRGB blend(const std::vector<inc_lRGB> &colors_lrgb_f);
+
+template <typename... LRGBs>
+requires(sizeof...(LRGBs) > 1) && (std::same_as<std::remove_cvref_t<LRGBs>, inc_lRGB> && ...)
+constexpr inc_lRGB blend(const LRGBs &...colors);
+
+template <typename... PR_LRGBs_F>
+requires(sizeof...(PR_LRGBs_F) > 1) &&
+        (std::same_as<std::remove_cvref_t<PR_LRGBs_F>, std::pair<inc_lRGB, double>> && ...)
+constexpr inc_lRGB blend(const PR_LRGBs_F &...colors);
+
+
+// S_RGB blending
+constexpr inc_sRGB blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f);
+constexpr inc_sRGB blend(const std::vector<inc_sRGB> &colors_srgb);
+
+template <typename... SRGBs>
+requires(sizeof...(SRGBs) > 1) && (std::same_as<std::remove_cvref_t<SRGBs>, inc_lRGB> && ...)
+constexpr inc_lRGB blend(const SRGBs &...colors);
+
+template <typename... PR_SRGBs_F>
+requires(sizeof...(PR_SRGBs_F) > 1) &&
+        (std::same_as<std::remove_cvref_t<PR_SRGBs_F>, std::pair<inc_lRGB, double>> && ...)
+constexpr inc_lRGB blend(const PR_SRGBs_F &...colors);
+
+constexpr inc_sRGB blend(const std::pair<inc_sRGB, double> &color1_srgb_f,
+                         const std::pair<inc_sRGB, double> &color2_srgb_f);
+constexpr inc_sRGB blend(const inc_sRGB &color1_srgb, const inc_sRGB &color2_srgb, const double factor1 = 1.0,
+                         const double factor2 = 1.0);
 } // namespace pigment
 
 // ###############################
@@ -677,7 +710,7 @@ constexpr Color Color::mix(const std::vector<std::pair<Color, double>> &colors) 
         double ksSum   = 0.0;
         double concSum = 0.0;
         for (auto const &[c, factor] : colors) {
-            double const conc  = std::pow(factor, 2) * std::pow(c.tintingStrength, 2) * c.luminance();
+            double const conc  = std::pow(factor, 2) * std::pow(c.tintingStrength, 2) * c.luminance;
             concSum           += conc;
             ksSum             += c.KS()[i] * conc;
         }
@@ -762,25 +795,25 @@ constexpr std::string Color::toString(const std::string &format, const gamutMap_
     else { throw std::invalid_argument("Unknown format in toString: " + format); }
 }
 
-inline constexpr inc_lRGB pigment::mix_lRBG_f(const std::vector<std::pair<inc_lRGB, double>> &colors_srgb_f) {
+inline constexpr inc_lRGB pigment::blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f) {
     std::vector<double> luminances;
-    luminances.reserve(colors_srgb_f.size());
-    for (size_t i = 0; i < colors_srgb_f.size(); ++i) {
-        luminances.push_back(Converter::luminance_from_lRGB(colors_srgb_f[i].first));
+    luminances.reserve(colors_lrgb_f.size());
+    for (size_t i = 0; i < colors_lrgb_f.size(); ++i) {
+        luminances.push_back(Converter::luminance_from_lRGB(colors_lrgb_f[i].first));
     }
 
     std::vector<arr_dbl38> KSs;
-    KSs.reserve(colors_srgb_f.size());
-    for (size_t i = 0; i < colors_srgb_f.size(); ++i) {
-        KSs.push_back(Converter::KS_from_lRGB(colors_srgb_f[i].first));
+    KSs.reserve(colors_lrgb_f.size());
+    for (size_t i = 0; i < colors_lrgb_f.size(); ++i) {
+        KSs.push_back(Converter::KS_from_lRGB(colors_lrgb_f[i].first));
     }
 
     arr_dbl38 Rm{};
     for (int i = 0; i < detail::SAMPLE_SIZE; ++i) {
         double ksSum   = 0.0;
         double concSum = 0.0;
-        for (size_t j = 0; j < colors_srgb_f.size(); ++j) {
-            double const conc  = std::pow(colors_srgb_f[j].second, 2) * luminances[j];
+        for (size_t j = 0; j < colors_lrgb_f.size(); ++j) {
+            double const conc  = std::pow(colors_lrgb_f[j].second, 2) * luminances[j];
             concSum           += conc;
             ksSum             += KSs[j][i] * conc;
         }
@@ -789,8 +822,11 @@ inline constexpr inc_lRGB pigment::mix_lRBG_f(const std::vector<std::pair<inc_lR
     Color cc(Rm);
     return cc.lRGB;
 }
+inline constexpr inc_lRGB pigment::blend(const std::vector<inc_lRGB> &colors_lrgb_f) {
+    return inc_lRGB{0, 0, 0};
+}
 
-inline constexpr inc_sRGB pigment::mix_sRBG_f(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f) {
+inline constexpr inc_sRGB pigment::blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f) {
 
     std::vector<inc_lRGB> lRBGs;
     lRBGs.reserve(colors_srgb_f.size());
@@ -823,20 +859,20 @@ inline constexpr inc_sRGB pigment::mix_sRBG_f(const std::vector<std::pair<inc_sR
     return cc.sRGB;
 }
 
-inline constexpr inc_sRGB pigment::mix_sRBG_f(const std::vector<inc_sRGB> &colors_srgb) {
+inline constexpr inc_sRGB pigment::blend(const std::vector<inc_sRGB> &colors_srgb) {
     std::vector<std::pair<inc_sRGB, double>> reformed;
     for (auto const &colItem : colors_srgb) { reformed.push_back({colItem, 1}); }
-    return mix_sRBG_f(reformed);
+    return blend(reformed);
 }
 
-inline constexpr inc_sRGB pigment::mix_sRBG_f(const std::pair<inc_sRGB, double> &color1_srgb_f,
-                                              const std::pair<inc_sRGB, double> &color2_srgb_f) {
-    return mix_sRBG_f({color1_srgb_f, color2_srgb_f});
+inline constexpr inc_sRGB pigment::blend(const std::pair<inc_sRGB, double> &color1_srgb_f,
+                                         const std::pair<inc_sRGB, double> &color2_srgb_f) {
+    return blend({color1_srgb_f, color2_srgb_f});
 }
 
-inline constexpr inc_sRGB pigment::mix_sRBG_f(const inc_sRGB &color1_srgb, const inc_sRGB &color2_srgb,
-                                              const double factor1, const double factor2) {
-    return mix_sRBG_f({std::make_pair(color1_srgb, factor1), std::make_pair(color2_srgb, factor2)});
+inline constexpr inc_sRGB pigment::blend(const inc_sRGB &color1_srgb, const inc_sRGB &color2_srgb, const double factor1,
+                                         const double factor2) {
+    return blend({std::make_pair(color1_srgb, factor1), std::make_pair(color2_srgb, factor2)});
 };
 
 } // namespace incom::standard::color

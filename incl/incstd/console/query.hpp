@@ -22,7 +22,7 @@
 #include <unistd.h>
 #endif
 
-#include "common.hpp"
+#include "console_common.hpp"
 #include "colorschemes.hpp"
 
 
