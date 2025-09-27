@@ -1,0 +1,294 @@
+#pragma once
+#include <array>
+#include <charconv>
+#include <chrono>
+#include <cstdint>
+#include <expected>
+#include <filesystem>
+#include <fstream>
+#include <optional>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <string_view>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <unistd.h>
+#endif
+
+#include "common.hpp"
+#include "colorschemes.hpp"
+
+
+
+namespace incom::standard::console {
+using namespace incom::standard::color;
+
+class QueryColor {
+public:
+    // ────────────── PUBLIC API ──────────────
+    using Result = std::expected<inc_sRGB, err_terminal>;
+
+    // query palette index 0..255 (returns expected)
+    [[nodiscard]] static constexpr Result queryPaletteIndex(int index) {
+#ifdef _WIN32
+        return campbellColor(index);
+#else
+        return queryPaletteIndexPosix(index);
+#endif
+    }
+
+    // convenience: always returns something (Campbell on failure)
+    [[nodiscard]] static constexpr inc_sRGB queryPaletteIndex_fb(int index) noexcept {
+#ifdef _WIN32
+        return campbellColor(index);
+#else
+        auto res = queryPaletteIndexPosix(index);
+        return res ? *res : campbellColor(index);
+#endif
+    }
+
+    // foreground
+    [[nodiscard]] static constexpr Result queryForeground() {
+#ifdef _WIN32
+        return campbellColor(7);
+#else
+        return queryForegroundPosix();
+#endif
+    }
+
+    [[nodiscard]] static constexpr inc_sRGB queryForeground_fb() noexcept {
+#ifdef _WIN32
+        return campbellColor(7);
+#else
+        auto res = queryForegroundPosix();
+        return res ? *res : campbellColor(7);
+#endif
+    }
+
+    // background
+    [[nodiscard]] static constexpr Result queryBackground() {
+#ifdef _WIN32
+        return campbellColor(0);
+#else
+        return queryBackgroundPosix();
+#endif
+    }
+
+    [[nodiscard]] static constexpr inc_sRGB queryBackground_fb() noexcept {
+#ifdef _WIN32
+        return campbellColor(0);
+#else
+        auto res = queryBackgroundPosix();
+        return res ? *res : campbellColor(0);
+#endif
+    }
+
+    // get all 16 colors at once with fallback
+    [[nodiscard]] static constexpr palette16 queryAll16_fb() noexcept {
+        palette16 colors{};
+        for (int i = 0; i < 16; ++i) {
+#ifdef _WIN32
+            colors[i] = campbellColor(i);
+#else
+            auto res  = queryPaletteIndexPosix(i);
+            colors[i] = res ? *res : campbellColor(i);
+#endif
+        }
+        return colors;
+    }
+
+    [[nodiscard]] static constexpr std::string_view to_string(err_terminal e) noexcept {
+        using namespace std::literals;
+        switch (e) {
+            case err_terminal::NoTerminal:  return "NoTerminal"sv;
+            case err_terminal::IoError:     return "IoError"sv;
+            case err_terminal::Timeout:     return "Timeout"sv;
+            case err_terminal::ParseError:  return "ParseError"sv;
+            case err_terminal::Unsupported: return "Unsupported"sv;
+        }
+        return "Unknown"sv;
+    }
+
+    // direct Campbell color
+    [[nodiscard]] static constexpr inc_sRGB campbellColor(int index) noexcept {
+        if (! index16_valid(index)) { return inc_sRGB{255, 255, 255}; }
+        return color_schemes::windows_terminal::campbell.palette[index];
+    }
+
+private:
+    // ────────────── INTERNAL ──────────────
+
+    [[nodiscard]] static constexpr bool index256_valid(int idx) noexcept { return idx >= 0 && idx <= 255; }
+    [[nodiscard]] static constexpr bool index16_valid(int idx) noexcept { return idx >= 0 && idx <= 15; }
+
+#ifdef _WIN32
+    // So far nothing here
+    // In the future might have some implementation once Windows terminal reports actually used colors with OSC 4
+
+#else
+    struct uniq_fd {
+        int fd{-1};
+        explicit uniq_fd(int f) : fd(f) {}
+        ~uniq_fd() {
+            if (fd >= 0) { ::close(fd); }
+        }
+        uniq_fd(const uniq_fd &)            = delete;
+        uniq_fd &operator=(const uniq_fd &) = delete;
+        uniq_fd(uniq_fd &&o) noexcept : fd(o.fd) { o.fd = -1; }
+        uniq_fd &operator=(uniq_fd &&o) noexcept {
+            if (fd >= 0) { ::close(fd); }
+            fd   = o.fd;
+            o.fd = -1;
+            return *this;
+        }
+        bool valid() const noexcept { return fd >= 0; }
+        int  get() const noexcept { return fd; }
+    };
+
+    struct termios_guard {
+        int     fd{-1};
+        termios old{};
+        bool    active = false;
+        explicit termios_guard(int f) : fd(f) {
+            if (fd >= 0 && tcgetattr(fd, &old) == 0) {
+                termios raw      = old;
+                raw.c_lflag     &= ~(ICANON | ECHO);
+                raw.c_cc[VMIN]   = 0;
+                raw.c_cc[VTIME]  = 0;
+                if (tcsetattr(fd, TCSANOW, &raw) == 0) { active = true; }
+            }
+        }
+        ~termios_guard() {
+            if (active) { tcsetattr(fd, TCSANOW, &old); }
+        }
+        termios_guard(const termios_guard &)            = delete;
+        termios_guard &operator=(const termios_guard &) = delete;
+    };
+
+    static constexpr bool write_all(int fd, const char *data, size_t len) noexcept {
+        size_t done = 0;
+        while (done < len) {
+            ssize_t n = ::write(fd, data + done, len - done);
+            if (n < 0) {
+                if (errno == EINTR) { continue; }
+                return false;
+            }
+            done += size_t(n);
+        }
+        return true;
+    }
+
+    static constexpr std::expected<std::string, err_terminal> read_reply_from_tty(int ttyFd,
+                                                                                  int timeoutMs = 500) noexcept {
+        using clock          = std::chrono::steady_clock;
+        auto        deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
+        std::string buf;
+        buf.reserve(64);
+        termios_guard guard(ttyFd);
+        if (! guard.active) { return std::unexpected(err_terminal::IoError); }
+
+        while (clock::now() < deadline) {
+            fd_set rfds;
+            FD_ZERO(&rfds);
+            FD_SET(ttyFd, &rfds);
+            auto           remain = std::chrono::duration_cast<std::chrono::microseconds>(deadline - clock::now());
+            struct timeval tv{static_cast<time_t>(remain.count() / 1000000),
+                              static_cast<suseconds_t>(remain.count() % 1000000)};
+            int            r = select(ttyFd + 1, &rfds, nullptr, nullptr, &tv);
+            if (r < 0) {
+                if (errno == EINTR) { continue; }
+                return std::unexpected(err_terminal::IoError);
+            }
+            if (r == 0) {
+                continue; // timeout slice
+            }
+            if (FD_ISSET(ttyFd, &rfds)) {
+                char    ch;
+                ssize_t n = ::read(ttyFd, &ch, 1);
+                if (n < 0) {
+                    if (errno == EINTR) { continue; }
+                    return std::unexpected(err_terminal::IoError);
+                }
+                if (n == 0) { break; }
+                buf.push_back(ch);
+                if (buf.back() == '\a') { break; }
+                if (buf.size() >= 2 && buf[buf.size() - 2] == '\033' && buf.back() == '\\') { break; }
+            }
+        }
+        if (buf.empty()) { return std::unexpected(err_terminal::Timeout); }
+        return buf;
+    }
+
+    static constexpr std::expected<std::string, err_terminal> send_osc_and_read(const std::string &osc,
+                                                                                int timeoutMs = 500) noexcept {
+        if (! isatty(STDOUT_FILENO) && ! isatty(STDIN_FILENO)) { return std::unexpected(err_terminal::NoTerminal); }
+        uniq_fd tty(::open("/dev/tty", O_RDWR | O_NOCTTY));
+        if (! tty.valid()) { return std::unexpected(err_terminal::NoTerminal); }
+        if (! write_all(tty.get(), osc.data(), osc.size())) { return std::unexpected(err_terminal::IoError); }
+        return read_reply_from_tty(tty.get(), timeoutMs);
+    }
+
+    static constexpr std::expected<TC_RBG, err_terminal> parse_color_from_reply(std::string reply) noexcept {
+        while (! reply.empty() && (reply.back() == '\r' || reply.back() == '\n')) { reply.pop_back(); }
+
+        static std::regex rx_rgb(R"(rgb:([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4}))");
+        static std::regex rx_hash(R"(#([0-9A-Fa-f]{6}))");
+        std::smatch       m;
+        if (std::regex_search(reply, m, rx_rgb)) {
+            auto to8 = [](std::string_view s) -> std::uint8_t {
+                unsigned v = 0;
+                std::from_chars(s.data(), s.data() + s.size(), v, 16);
+                if (v > 0xFF) { v /= 257; }
+                return static_cast<std::uint8_t>(v);
+            };
+            return TC_RBG{to8(m[1].str()), to8(m[2].str()), to8(m[3].str())};
+        }
+        if (std::regex_search(reply, m, rx_hash)) {
+            std::string_view hex   = m[1].str();
+            auto             from2 = [&](int off) {
+                unsigned v = 0;
+                std::from_chars(hex.data() + off, hex.data() + off + 2, v, 16);
+                return static_cast<std::uint8_t>(v);
+            };
+            return TC_RBG{from2(0), from2(2), from2(4)};
+        }
+        return std::unexpected(err_terminal::ParseError);
+    }
+
+    static constexpr std::string make_osc_query(const std::string &body) { return "\033]" + body + '\a'; }
+
+    static constexpr Result queryPaletteIndexPosix(int index) noexcept {
+        if (! index256_valid(index)) { return std::unexpected(err_terminal::Unsupported); }
+        auto replyOrErr = send_osc_and_read(make_osc_query("4;" + std::to_string(index) + ";?"));
+        if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
+        auto rgbOrErr = parse_color_from_reply(*replyOrErr);
+        if (! rgbOrErr) { return std::unexpected(rgbOrErr.error()); }
+        return *rgbOrErr;
+    }
+
+    static constexpr Result queryForegroundPosix() noexcept {
+        auto replyOrErr = send_osc_and_read(make_osc_query("10;?"));
+        if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
+        auto rgbOrErr = parse_color_from_reply(*replyOrErr);
+        if (! rgbOrErr) { return std::unexpected(rgbOrErr.error()); }
+        return *rgbOrErr;
+    }
+
+    static constexpr Result queryBackgroundPosix() noexcept {
+        auto replyOrErr = send_osc_and_read(make_osc_query("11;?"));
+        if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
+        auto rgbOrErr = parse_color_from_reply(*replyOrErr);
+        if (! rgbOrErr) { return std::unexpected(rgbOrErr.error()); }
+        return *rgbOrErr;
+    }
+#endif
+};
+
+} // namespace incom::standard::console
