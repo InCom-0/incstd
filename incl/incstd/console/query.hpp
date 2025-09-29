@@ -25,82 +25,128 @@
 namespace incom::standard::console {
 using namespace incom::standard::color;
 
-class QueryColor {
+class ColorQuery {
 public:
     // ────────────── PUBLIC API ──────────────
     using Result = std::expected<inc_sRGB, err_terminal>;
 
     // query palette index 0..255 (returns expected)
-    [[nodiscard]] static constexpr Result queryPaletteIndex(int index) {
+    [[nodiscard]] static constexpr Result get_paletteIdx(int index) {
 #ifdef _WIN32
-        return defaultColor(index);
+        return get_defaultColor(index);
 #else
         return queryPaletteIndexPosix(index);
 #endif
     }
 
-    // convenience: always returns something (Campbell on failure)
-    [[nodiscard]] static constexpr inc_sRGB queryPaletteIndex_fb(int index) noexcept {
+    // convenience: always returns something (default palette on failure)
+    [[nodiscard]] static constexpr inc_sRGB get_paletteIdx_fb(int index) noexcept {
 #ifdef _WIN32
-        return defaultColor(index);
+        return get_defaultColor(index);
 #else
         auto res = queryPaletteIndexPosix(index);
-        return res ? *res : defaultColor(index);
+        return res ? *res : get_defaultColor(index);
 #endif
     }
 
     // foreground
-    [[nodiscard]] static constexpr Result queryForeground() {
+    [[nodiscard]] static constexpr Result get_foreground() {
 #ifdef _WIN32
-        return defaultColor(7);
+        return get_defaultColor(7);
 #else
         return queryForegroundPosix();
 #endif
     }
 
-    [[nodiscard]] static constexpr inc_sRGB queryForeground_fb() noexcept {
+    [[nodiscard]] static constexpr inc_sRGB get_foreground_fb() noexcept {
 #ifdef _WIN32
-        return defaultColor(7);
+        return get_defaultColor(7);
 #else
         auto res = queryForegroundPosix();
-        return res ? *res : defaultColor(7);
+        return res ? *res : get_defaultColor(7);
 #endif
     }
 
     // background
-    [[nodiscard]] static constexpr Result queryBackground() {
+    [[nodiscard]] static constexpr Result get_background() {
 #ifdef _WIN32
-        return defaultColor(0);
+        return get_defaultColor(0);
 #else
         return queryBackgroundPosix();
 #endif
     }
 
-    [[nodiscard]] static constexpr inc_sRGB queryBackground_fb() noexcept {
+    [[nodiscard]] static constexpr inc_sRGB get_background_fb() noexcept {
 #ifdef _WIN32
-        return defaultColor(0);
+        return get_defaultColor(0);
 #else
         auto res = queryBackgroundPosix();
-        return res ? *res : defaultColor(0);
+        return res ? *res : get_defaultColor(0);
 #endif
     }
 
     // get all 16 colors at once with fallback
-    [[nodiscard]] static constexpr palette16 queryAll16_fb() noexcept {
+    [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16() noexcept {
         palette16 colors{};
-        for (int i = 0; i < 16; ++i) {
+        for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
 #ifdef _WIN32
-            colors[i] = defaultColor(i);
+            colors[i] = get_defaultColor(i);
 #else
-            auto res  = queryPaletteIndexPosix(i);
-            colors[i] = res ? res.value() : defaultColor(i);
+            auto res = queryPaletteIndexPosix(i);
+            if (res.has_value()) { colors[i] = res.value(); }
+            else { return std::unexpected(res.error()); }
+#endif
+        }
+        return colors;
+    }
+
+    // get all 16 colors at once with fallback
+    [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16_fb() noexcept {
+        palette16 colors{};
+        for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
+#ifdef _WIN32
+            colors[i] = get_defaultColor(i);
+#else
+            auto res = queryPaletteIndexPosix(i);
+            if (res.has_value()) { colors[i] = res.value(); }
+            else { colors[i] = get_defaultColor(i); }
+#endif
+        }
+        return colors;
+    }
+
+    // get all 16 colors at once with fallback
+    [[nodiscard]] static constexpr std::expected<palette256, err_terminal> get_palette256() noexcept {
+        palette256 colors{};
+        for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
+#ifdef _WIN32
+            colors[i] = get_defaultColor(i);
+#else
+            auto res = queryPaletteIndexPosix(i);
+            if (res.has_value()) { colors[i] = res.value(); }
+            else { return std::unexpected(res.error()); }
+#endif
+        }
+        return colors;
+    }
+
+    // get all 256 colors at once with fallback
+    [[nodiscard]] static constexpr std::expected<palette256, err_terminal> get_palette256_fb() noexcept {
+        palette256 colors{};
+        for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
+#ifdef _WIN32
+            colors[i] = get_defaultColor(i);
+#else
+            auto res = queryPaletteIndexPosix(i);
+            if (res.has_value()) { colors[i] = res.value(); }
+            else { colors[i] = get_defaultColor(i); }
 #endif
         }
         return colors;
     }
 
     // Get color from the 'default' palette
-    [[nodiscard]] static constexpr inc_sRGB defaultColor(int index) noexcept {
+    [[nodiscard]] static constexpr inc_sRGB get_defaultColor(int index) noexcept {
         if (! index16_valid(index)) { return inc_sRGB{255, 255, 255}; }
         return color_schemes::defaultScheme16.palette[index];
     }
