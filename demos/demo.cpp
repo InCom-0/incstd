@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
 
     auto ttt  = ColorQuery::get_palette16();
-    auto ttt2 = ColorQuery::get_palette256();
+    auto ttt2 = ColorQuery::get_palette256_TMP();
 
     // std::cout << "Palette16:\n";
     // for (auto &item : ttt.value()) {
