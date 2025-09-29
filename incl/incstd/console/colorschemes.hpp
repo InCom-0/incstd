@@ -21,6 +21,18 @@ struct scheme256 {
 };
 
 
+inline constexpr int get_SGR_fg(ANSI_Color16 col) {
+    static constexpr std::array<int, 16> map{30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97};
+    return map[static_cast<int>(col)];
+}
+inline constexpr int get_SGR_bg(ANSI_Color16 col) {
+    static constexpr std::array<int, 16> map{40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107};
+    return map[static_cast<int>(col)];
+}
+
+
+
+
 namespace windows_terminal {
 
 inline constexpr scheme16 campbell{
