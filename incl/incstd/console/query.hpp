@@ -147,8 +147,8 @@ public:
 
     // Get color from the 'default' palette
     [[nodiscard]] static constexpr inc_sRGB get_defaultColor(int index) noexcept {
-        if (! index16_valid(index)) { return inc_sRGB{255, 255, 255}; }
-        return color_schemes::defaultScheme16.palette[index];
+        if (! index256_valid(index)) { return inc_sRGB{255, 255, 255}; }
+        return color_schemes::defaultScheme256.palette[index];
     }
 
 private:
