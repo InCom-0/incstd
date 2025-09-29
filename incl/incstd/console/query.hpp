@@ -35,7 +35,7 @@ public:
 #ifdef _WIN32
         return get_defaultColor(index);
 #else
-        return queryPaletteIndexPosix(index);
+        return queryPaletteIndex(index);
 #endif
     }
 
@@ -44,7 +44,7 @@ public:
 #ifdef _WIN32
         return get_defaultColor(index);
 #else
-        auto res = queryPaletteIndexPosix(index);
+        auto res = queryPaletteIndex(index);
         return res ? *res : get_defaultColor(index);
 #endif
     }
@@ -54,7 +54,7 @@ public:
 #ifdef _WIN32
         return get_defaultColor(7);
 #else
-        return queryForegroundPosix();
+        return queryForeground();
 #endif
     }
 
@@ -62,7 +62,7 @@ public:
 #ifdef _WIN32
         return get_defaultColor(7);
 #else
-        auto res = queryForegroundPosix();
+        auto res = queryForeground();
         return res ? *res : get_defaultColor(7);
 #endif
     }
@@ -72,7 +72,7 @@ public:
 #ifdef _WIN32
         return get_defaultColor(0);
 #else
-        return queryBackgroundPosix();
+        return queryBackground();
 #endif
     }
 
@@ -80,19 +80,19 @@ public:
 #ifdef _WIN32
         return get_defaultColor(0);
 #else
-        auto res = queryBackgroundPosix();
+        auto res = queryBackground();
         return res ? *res : get_defaultColor(0);
 #endif
     }
 
-    // get all 16 colors at once with fallback
+    // get all 16 colors at once
     [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16() noexcept {
         palette16 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
 #ifdef _WIN32
             colors[i] = get_defaultColor(i);
 #else
-            auto res = queryPaletteIndexPosix(i);
+            auto res = queryPaletteIndex(i);
             if (res.has_value()) { colors[i] = res.value(); }
             else { return std::unexpected(res.error()); }
 #endif
@@ -107,7 +107,7 @@ public:
 #ifdef _WIN32
             colors[i] = get_defaultColor(i);
 #else
-            auto res = queryPaletteIndexPosix(i);
+            auto res = queryPaletteIndex(i);
             if (res.has_value()) { colors[i] = res.value(); }
             else { colors[i] = get_defaultColor(i); }
 #endif
@@ -115,14 +115,14 @@ public:
         return colors;
     }
 
-    // get all 16 colors at once with fallback
+    // get all 256 colors at once
     [[nodiscard]] static constexpr std::expected<palette256, err_terminal> get_palette256() noexcept {
         palette256 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
 #ifdef _WIN32
             colors[i] = get_defaultColor(i);
 #else
-            auto res = queryPaletteIndexPosix(i);
+            auto res = queryPaletteIndex(i);
             if (res.has_value()) { colors[i] = res.value(); }
             else { return std::unexpected(res.error()); }
 #endif
@@ -137,7 +137,7 @@ public:
 #ifdef _WIN32
             colors[i] = get_defaultColor(i);
 #else
-            auto res = queryPaletteIndexPosix(i);
+            auto res = queryPaletteIndex(i);
             if (res.has_value()) { colors[i] = res.value(); }
             else { colors[i] = get_defaultColor(i); }
 #endif
@@ -295,7 +295,7 @@ private:
 
     static constexpr std::string make_osc_query(const std::string &body) { return "\033]" + body + '\a'; }
 
-    static constexpr Result queryPaletteIndexPosix(int index) noexcept {
+    static constexpr Result queryPaletteIndex(int index) noexcept {
         if (! index256_valid(index)) { return std::unexpected(err_terminal::Unsupported); }
         auto replyOrErr = send_osc_and_read(make_osc_query("4;" + std::to_string(index) + ";?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
@@ -304,7 +304,7 @@ private:
         return *rgbOrErr;
     }
 
-    static constexpr Result queryForegroundPosix() noexcept {
+    static constexpr Result queryForeground() noexcept {
         auto replyOrErr = send_osc_and_read(make_osc_query("10;?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
         auto rgbOrErr = parse_color_from_reply(*replyOrErr);
@@ -312,7 +312,7 @@ private:
         return *rgbOrErr;
     }
 
-    static constexpr Result queryBackgroundPosix() noexcept {
+    static constexpr Result queryBackground() noexcept {
         auto replyOrErr = send_osc_and_read(make_osc_query("11;?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
         auto rgbOrErr = parse_color_from_reply(*replyOrErr);
