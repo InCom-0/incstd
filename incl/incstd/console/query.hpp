@@ -28,10 +28,10 @@ using namespace incom::standard::color;
 class ColorQuery {
 public:
     // ────────────── PUBLIC API ──────────────
-    using Result = std::expected<inc_sRGB, err_terminal>;
+    using result_t = std::expected<inc_sRGB, err_terminal>;
 
     // query palette index 0..255 (returns expected)
-    [[nodiscard]] static constexpr Result get_paletteIdx(int index) {
+    [[nodiscard]] static constexpr result_t get_paletteIdx(int index) {
 #ifdef _WIN32
         return get_defaultColor(index);
 #else
@@ -50,7 +50,7 @@ public:
     }
 
     // foreground
-    [[nodiscard]] static constexpr Result get_foreground() {
+    [[nodiscard]] static constexpr result_t get_foreground() {
 #ifdef _WIN32
         return get_defaultColor(7);
 #else
@@ -68,7 +68,7 @@ public:
     }
 
     // background
-    [[nodiscard]] static constexpr Result get_background() {
+    [[nodiscard]] static constexpr result_t get_background() {
 #ifdef _WIN32
         return get_defaultColor(0);
 #else
@@ -154,8 +154,8 @@ public:
 private:
     // ────────────── INTERNAL ──────────────
 
-    [[nodiscard]] static constexpr bool index256_valid(int idx) noexcept { return idx >= 0 && idx <= 255; }
     [[nodiscard]] static constexpr bool index16_valid(int idx) noexcept { return idx >= 0 && idx <= 15; }
+    [[nodiscard]] static constexpr bool index256_valid(int idx) noexcept { return idx >= 0 && idx <= 255; }
 
 #ifdef _WIN32
     // So far nothing here
