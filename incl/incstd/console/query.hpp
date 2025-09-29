@@ -33,7 +33,7 @@ public:
     // query palette index 0..255 (returns expected)
     [[nodiscard]] static constexpr Result queryPaletteIndex(int index) {
 #ifdef _WIN32
-        return campbellColor(index);
+        return defaultColor(index);
 #else
         return queryPaletteIndexPosix(index);
 #endif
@@ -42,7 +42,7 @@ public:
     // convenience: always returns something (Campbell on failure)
     [[nodiscard]] static constexpr inc_sRGB queryPaletteIndex_fb(int index) noexcept {
 #ifdef _WIN32
-        return campbellColor(index);
+        return defaultColor(index);
 #else
         auto res = queryPaletteIndexPosix(index);
         return res ? *res : defaultColor(index);
@@ -52,7 +52,7 @@ public:
     // foreground
     [[nodiscard]] static constexpr Result queryForeground() {
 #ifdef _WIN32
-        return campbellColor(7);
+        return defaultColor(7);
 #else
         return queryForegroundPosix();
 #endif
@@ -60,7 +60,7 @@ public:
 
     [[nodiscard]] static constexpr inc_sRGB queryForeground_fb() noexcept {
 #ifdef _WIN32
-        return campbellColor(7);
+        return defaultColor(7);
 #else
         auto res = queryForegroundPosix();
         return res ? *res : defaultColor(7);
@@ -70,7 +70,7 @@ public:
     // background
     [[nodiscard]] static constexpr Result queryBackground() {
 #ifdef _WIN32
-        return campbellColor(0);
+        return defaultColor(0);
 #else
         return queryBackgroundPosix();
 #endif
@@ -78,7 +78,7 @@ public:
 
     [[nodiscard]] static constexpr inc_sRGB queryBackground_fb() noexcept {
 #ifdef _WIN32
-        return campbellColor(0);
+        return defaultColor(0);
 #else
         auto res = queryBackgroundPosix();
         return res ? *res : defaultColor(0);
@@ -90,7 +90,7 @@ public:
         palette16 colors{};
         for (int i = 0; i < 16; ++i) {
 #ifdef _WIN32
-            colors[i] = campbellColor(i);
+            colors[i] = defaultColor(i);
 #else
             auto res  = queryPaletteIndexPosix(i);
             colors[i] = res ? res.value() : defaultColor(i);
@@ -99,7 +99,7 @@ public:
         return colors;
     }
 
-    // direct Campbell color
+    // Get color from the 'default' palette
     [[nodiscard]] static constexpr inc_sRGB defaultColor(int index) noexcept {
         if (! index16_valid(index)) { return inc_sRGB{255, 255, 255}; }
         return color_schemes::defaultScheme16.palette[index];
