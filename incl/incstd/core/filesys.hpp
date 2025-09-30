@@ -4,7 +4,7 @@
 #include <fstream>
 #include <optional>
 
-#include <incstd/hashing.hpp>
+#include <incstd/core/hashing.hpp>
 #include <ankerl/unordered_dense.h>
 
 namespace incom::standard::filesys {

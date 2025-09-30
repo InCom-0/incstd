@@ -2,8 +2,8 @@
 
 #include <unordered_map>
 
-#include <incstd/concepts.hpp>
-#include <incstd/typegen.hpp>
+#include <incstd/core/concepts.hpp>
+#include <incstd/core/typegen.hpp>
 
 
 namespace incom::standard::variant_utils {

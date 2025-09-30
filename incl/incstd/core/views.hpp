@@ -1,10 +1,9 @@
 #pragma once
 
-
-#include <incstd/typegen.hpp>
 #include <ranges>
 #include <utility>
 
+#include <incstd/core/typegen.hpp>
 
 namespace incom::standard::views {
 namespace detail {

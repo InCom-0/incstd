@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-#include <incstd/concepts.hpp>
+#include <incstd/core/concepts.hpp>
 
 
 namespace incom::standard::algos {

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "incstd_base.hpp"
-#include "incstd_console.hpp"
+#include <incstd/incstd_core.hpp>
+#include <incstd/incstd_color.hpp>
+#include <incstd/incstd_console.hpp>
 
 
 #ifndef INCOM_INCSTD_NAMESPACE_ALIAS

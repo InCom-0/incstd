@@ -3,7 +3,7 @@
 #include <more_concepts/more_concepts.hpp>
 #include <xxhash.h>
 
-#include <incstd/concepts.hpp>
+#include <incstd/core/concepts.hpp>
 
 
 namespace incom::standard::hashing {

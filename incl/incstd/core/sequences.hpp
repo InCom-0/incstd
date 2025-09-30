@@ -6,7 +6,7 @@
 #include <ankerl/unordered_dense.h>
 #include <more_concepts/more_concepts.hpp>
 
-#include <incstd/hashing.hpp>
+#include <incstd/core/hashing.hpp>
 
 
 namespace incom::standard::seq {
