@@ -11,53 +11,53 @@ using namespace incom::standard::color;
 using namespace std::literals;
 
 enum class SGR_map : std::size_t {
-    Reset            = 0,
+    Reset = 0,
 
-    Bold             = 1,
-    Faint            = 2,
-    Italic           = 3,
-    Underline        = 4,
-    SlowBlink        = 5,
-    RapidBlink       = 6,
-    Inverse          = 7,
-    Conceal          = 8,
-    CrossedOut       = 9,
+    Bold       = 1,
+    Faint      = 2,
+    Italic     = 3,
+    Underline  = 4,
+    SlowBlink  = 5,
+    RapidBlink = 6,
+    Inverse    = 7,
+    Conceal    = 8,
+    CrossedOut = 9,
 
-    Fraktur          = 20,
-    DoubleUnderline  = 21,  // sometimes "BoldOff" depending on terminal
-    NormalIntensity  = 22,
-    ItalicOff        = 23,
-    UnderlineOff     = 24,
-    BlinkOff         = 25,
-    InverseOff       = 27,
-    ConcealOff       = 28,
-    CrossedOutOff    = 29,
+    Fraktur         = 20,
+    DoubleUnderline = 21, // sometimes "BoldOff" depending on terminal
+    NormalIntensity = 22,
+    ItalicOff       = 23,
+    UnderlineOff    = 24,
+    BlinkOff        = 25,
+    InverseOff      = 27,
+    ConcealOff      = 28,
+    CrossedOutOff   = 29,
 
-    FG_Black         = 30,
-    FG_Red           = 31,
-    FG_Green         = 32,
-    FG_Yellow        = 33,
-    FG_Blue          = 34,
-    FG_Magenta       = 35,
-    FG_Cyan          = 36,
-    FG_White         = 37,
-    FG_Default       = 39,
+    FG_Black   = 30,
+    FG_Red     = 31,
+    FG_Green   = 32,
+    FG_Yellow  = 33,
+    FG_Blue    = 34,
+    FG_Magenta = 35,
+    FG_Cyan    = 36,
+    FG_White   = 37,
+    FG_Default = 39,
 
-    BG_Black         = 40,
-    BG_Red           = 41,
-    BG_Green         = 42,
-    BG_Yellow        = 43,
-    BG_Blue          = 44,
-    BG_Magenta       = 45,
-    BG_Cyan          = 46,
-    BG_White         = 47,
-    BG_Default       = 49,
+    BG_Black   = 40,
+    BG_Red     = 41,
+    BG_Green   = 42,
+    BG_Yellow  = 43,
+    BG_Blue    = 44,
+    BG_Magenta = 45,
+    BG_Cyan    = 46,
+    BG_White   = 47,
+    BG_Default = 49,
 
-    Framed           = 51,
-    Encircled        = 52,
-    Overlined        = 53,
-    FrameOff         = 54,  // frame/encircle off
-    OverlineOff      = 55,
+    Framed      = 51,
+    Encircled   = 52,
+    Overlined   = 53,
+    FrameOff    = 54, // frame/encircle off
+    OverlineOff = 55,
 
     FG_BrightBlack   = 90,
     FG_BrightRed     = 91,
@@ -139,6 +139,9 @@ inline constexpr std::array<std::string_view, 108> SGR_direct = {
     "\x1b[100m"sv, "\x1b[101m"sv, "\x1b[102m"sv, "\x1b[103m"sv, "\x1b[104m"sv, "\x1b[105m"sv, "\x1b[106m"sv,
     "\x1b[107m"sv};
 
+constexpr std::string_view const &get_fromSGR_direct(SGR_map code) {
+    return SGR_direct[static_cast<int>(code)];
+}
 
 constexpr std::string_view get_fg(ANSI_Color16 col) {
     return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 90 : static_cast<int>(col) + 30];
