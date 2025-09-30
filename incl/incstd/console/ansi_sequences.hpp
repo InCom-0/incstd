@@ -157,7 +157,7 @@ constexpr std::string get_fg(std::uint8_t const r, std::uint8_t const g, std::ui
     return res;
 }
 constexpr std::string get_fg(inc_sRGB const color) {
-    return get_fg(color[0], color[1], color[2]);
+    return get_fg(color.r, color.g, color.b);
 }
 
 
@@ -175,7 +175,7 @@ constexpr std::string get_bg(std::uint8_t const r, std::uint8_t const g, std::ui
     return res;
 }
 constexpr std::string get_bg(inc_sRGB const color) {
-    return get_bg(color[0], color[1], color[2]);
+    return get_bg(color.r, color.g, color.b);
 }
 
 class SGR_builder {
@@ -243,9 +243,9 @@ public:
         return std::move(*this);
     }
 
-    constexpr SGR_builder  &color_fg(inc_sRGB const color)  &{ return this->color_fg(color[0], color[1], color[2]); }
+    constexpr SGR_builder  &color_fg(inc_sRGB const color)  &{ return this->color_fg(color.r, color.g, color.b); }
     constexpr SGR_builder &&color_fg(inc_sRGB const color) && {
-        return std::move(*this).color_fg(color[0], color[1], color[2]);
+        return std::move(*this).color_fg(color.r, color.g, color.b);
     }
 
     // ---- background colors ----
@@ -282,9 +282,9 @@ public:
         return std::move(*this);
     }
 
-    constexpr SGR_builder  &color_bg(inc_sRGB const color)  &{ return this->color_bg(color[0], color[1], color[2]); }
+    constexpr SGR_builder  &color_bg(inc_sRGB const color)  &{ return this->color_bg(color.r, color.g, color.b); }
     constexpr SGR_builder &&color_bg(inc_sRGB const color) && {
-        return std::move(*this).color_bg(color[0], color[1], color[2]);
+        return std::move(*this).color_bg(color.r, color.g, color.b);
     }
 
     // ---- styles ----

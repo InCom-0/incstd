@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     // }
     std::cout << "Palette256:\n";
     for (auto &item : curPalette.value()) {
-        std::cout << static_cast<int>(item[0]) << ", " << static_cast<int>(item[1]) << ", " << static_cast<int>(item[2])
+        std::cout << static_cast<int>(item.r) << ", " << static_cast<int>(item.g) << ", " << static_cast<int>(item.b)
                   << '\n';
     }
 
