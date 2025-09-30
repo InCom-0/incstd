@@ -9,6 +9,7 @@
 #include <string_view>
 
 #ifdef _WIN32
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <errno.h>
