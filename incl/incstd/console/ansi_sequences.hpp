@@ -227,6 +227,7 @@ public:
 
 
     friend std::ostream &operator<<(std::ostream &os, const SGR_builder &obj) { return os << obj.get_asRef(); }
+    friend std::ostream &operator<<(std::ostream &os, SGR_builder &&obj) { return os << std::move(obj).get(); }
 
 private:
     std::string _res;
@@ -249,7 +250,11 @@ template <>
 struct formatter<incom::standard::console::ANSI::SGR_builder> {
     template <typename FormatContext>
     auto format(const incom::standard::console::ANSI::SGR_builder &obj, FormatContext &ctx) {
-        return format_to(ctx.out(), "MyClass value = {}", obj.get_asRef());
+        return format_to(ctx.out(), obj.get_asRef());
+    }
+    template <typename FormatContext>
+    auto format(incom::standard::console::ANSI::SGR_builder &&obj, FormatContext &ctx) {
+        return format_to(ctx.out(), std::move(obj).get());
     }
 };
 } // namespace std
