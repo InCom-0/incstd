@@ -143,11 +143,39 @@ constexpr std::string_view const &get_fromSGR_direct(SGR_map code) {
     return SGR_direct[static_cast<int>(code)];
 }
 
-constexpr std::string_view get_fg(ANSI_Color16 col) {
+constexpr std::string_view get_fg(ANSI_Color16 const col) {
     return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 82 : static_cast<int>(col) + 30];
 }
-constexpr std::string_view get_bg(ANSI_Color16 col) {
+constexpr std::string get_fg(std::uint8_t const color_256) {
+    return std::string("\x1b[38;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
+}
+constexpr std::string get_fg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) {
+    std::string res("\x1b[38;2;");
+    res.append(std::to_string(r)).push_back(';');
+    res.append(std::to_string(g)).push_back(';');
+    res.append(std::to_string(b)).push_back('m');
+    return res;
+}
+constexpr std::string get_fg(inc_sRGB const color) {
+    return get_fg(color[0], color[1], color[2]);
+}
+
+
+constexpr std::string_view get_bg(ANSI_Color16 const col) {
     return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 92 : static_cast<int>(col) + 40];
+}
+constexpr std::string get_bg(std::uint8_t const color_256) {
+    return std::string("\x1b[48;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
+}
+constexpr std::string get_bg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) {
+    std::string res("\x1b[48;2;");
+    res.append(std::to_string(r)).push_back(';');
+    res.append(std::to_string(g)).push_back(';');
+    res.append(std::to_string(b)).push_back('m');
+    return res;
+}
+constexpr std::string get_bg(inc_sRGB const color) {
+    return get_bg(color[0], color[1], color[2]);
 }
 
 class SGR_builder {
@@ -182,92 +210,80 @@ public:
     }
 
     // ---- foreground colors ----
-    constexpr SGR_builder &color_fg(ANSI_Color16 col) & {
+    constexpr SGR_builder &color_fg(ANSI_Color16 const col) & {
         _res.append(get_fg(col));
         return *this;
     }
-    constexpr SGR_builder &&color_fg(ANSI_Color16 col) && {
+    constexpr SGR_builder &&color_fg(ANSI_Color16 const col) && {
         _res.append(get_fg(col));
         return std::move(*this);
     }
 
-    constexpr SGR_builder &color_fg(std::uint8_t color_256) & {
+    constexpr SGR_builder &color_fg(std::uint8_t const color_256) & {
         _res.append("\x1b[38;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
         return *this;
     }
-    constexpr SGR_builder &&color_fg(std::uint8_t color_256) && {
+    constexpr SGR_builder &&color_fg(std::uint8_t const color_256) && {
         _res.append("\x1b[38;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
         return std::move(*this);
     }
 
-    constexpr SGR_builder &color_fg(std::uint8_t r, std::uint8_t g, std::uint8_t b) & {
+    constexpr SGR_builder &color_fg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) & {
         _res.append("\x1b[38;2;");
-        _res.append(std::to_string(r));
-        _res.push_back(';');
-        _res.append(std::to_string(g));
-        _res.push_back(';');
-        _res.append(std::to_string(b));
-        _res.push_back('m');
+        _res.append(std::to_string(r)).push_back(';');
+        _res.append(std::to_string(g)).push_back(';');
+        _res.append(std::to_string(b)).push_back('m');
         return *this;
     }
-    constexpr SGR_builder &&color_fg(std::uint8_t r, std::uint8_t g, std::uint8_t b) && {
+    constexpr SGR_builder &&color_fg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) && {
         _res.append("\x1b[38;2;");
-        _res.append(std::to_string(r));
-        _res.push_back(';');
-        _res.append(std::to_string(g));
-        _res.push_back(';');
-        _res.append(std::to_string(b));
-        _res.push_back('m');
+        _res.append(std::to_string(r)).push_back(';');
+        _res.append(std::to_string(g)).push_back(';');
+        _res.append(std::to_string(b)).push_back('m');
         return std::move(*this);
     }
 
-    constexpr SGR_builder  &color_fg(const inc_sRGB &color)  &{ return this->color_fg(color[0], color[1], color[2]); }
-    constexpr SGR_builder &&color_fg(const inc_sRGB &color) && {
+    constexpr SGR_builder  &color_fg(inc_sRGB const color)  &{ return this->color_fg(color[0], color[1], color[2]); }
+    constexpr SGR_builder &&color_fg(inc_sRGB const color) && {
         return std::move(*this).color_fg(color[0], color[1], color[2]);
     }
 
     // ---- background colors ----
-    constexpr SGR_builder &color_bg(ANSI_Color16 col) & {
+    constexpr SGR_builder &color_bg(ANSI_Color16 const col) & {
         _res.append(get_bg(col));
         return *this;
     }
-    constexpr SGR_builder &&color_bg(ANSI_Color16 col) && {
+    constexpr SGR_builder &&color_bg(ANSI_Color16 const col) && {
         _res.append(get_bg(col));
         return std::move(*this);
     }
 
-    constexpr SGR_builder &color_bg(std::uint8_t color_256) & {
+    constexpr SGR_builder &color_bg(std::uint8_t const color_256) & {
         _res.append("\x1b[48;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
         return *this;
     }
-    constexpr SGR_builder &&color_bg(std::uint8_t color_256) && {
+    constexpr SGR_builder &&color_bg(std::uint8_t const color_256) && {
         _res.append("\x1b[48;5;").append(std::to_string(static_cast<int>(color_256))).append("m");
         return std::move(*this);
     }
 
-    constexpr SGR_builder &color_bg(std::uint8_t r, std::uint8_t g, std::uint8_t b) & {
+    constexpr SGR_builder &color_bg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) & {
         _res.append("\x1b[48;2;");
-        _res.append(std::to_string(r));
-        _res.push_back(';');
-        _res.append(std::to_string(g));
-        _res.push_back(';');
-        _res.append(std::to_string(b));
-        _res.push_back('m');
+        _res.append(std::to_string(r)).push_back(';');
+        _res.append(std::to_string(g)).push_back(';');
+        _res.append(std::to_string(b)).push_back('m');
         return *this;
     }
-    constexpr SGR_builder &&color_bg(std::uint8_t r, std::uint8_t g, std::uint8_t b) && {
+    constexpr SGR_builder &&color_bg(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) && {
         _res.append("\x1b[48;2;");
-        _res.append(std::to_string(r));
-        _res.push_back(';');
-        _res.append(std::to_string(g));
-        _res.push_back(';');
-        _res.append(std::to_string(b));
-        _res.push_back('m');
+        _res.append(std::to_string(r)).push_back(';');
+        _res.append(std::to_string(g)).push_back(';');
+        _res.append(std::to_string(b)).push_back('m');
         return std::move(*this);
     }
 
-    constexpr SGR_builder  &color_bg(const inc_sRGB &color)  &{ return this->color_bg(color[0], color[1], color[2]); }
-    constexpr SGR_builder &&color_bg(const inc_sRGB &color) && {
+    constexpr SGR_builder  &color_bg(inc_sRGB const color)  &{ return this->color_bg(color[0], color[1], color[2]); }
+    constexpr SGR_builder &&color_bg(inc_sRGB const color) && {
         return std::move(*this).color_bg(color[0], color[1], color[2]);
     }
 
