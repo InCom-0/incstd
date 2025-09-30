@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -138,6 +139,13 @@ inline constexpr std::array<std::string_view, 108> SGR_direct = {
     /* 100–107: bright bg colors */
     "\x1b[100m"sv, "\x1b[101m"sv, "\x1b[102m"sv, "\x1b[103m"sv, "\x1b[104m"sv, "\x1b[105m"sv, "\x1b[106m"sv,
     "\x1b[107m"sv};
+
+constexpr SGR_map ANSI_col16_to_SGRmap_fg(ANSI_Color16 col) {
+    return SGR_map{static_cast<int>(col) > 7 ? static_cast<size_t>(col) + 82uz : static_cast<size_t>(col) + 30uz};
+}
+constexpr SGR_map ANSI_col16_to_SGRmap_bg(ANSI_Color16 col) {
+    return SGR_map{static_cast<int>(col) > 7 ? static_cast<size_t>(col) + 92uz : static_cast<size_t>(col) + 40uz};
+}
 
 constexpr std::string_view const &get_fromSGR_direct(SGR_map code) {
     return SGR_direct[static_cast<int>(code)];
