@@ -199,6 +199,15 @@ public:
     // ### BUILDER METHODS      ##############
     // #######################################
 
+    constexpr SGR_builder &add_SGR_direct(SGR_map code) & {
+        _res.append(SGR_direct[static_cast<int>(code)]);
+        return *this;
+    }
+    constexpr SGR_builder &&add_SGR_direct(SGR_map code) && {
+        _res.append(SGR_direct[static_cast<int>(code)]);
+        return std::move(*this);
+    }
+
     constexpr SGR_builder &add_string(std::string_view sv) & {
         _res.append(sv);
         return *this;

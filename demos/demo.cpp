@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <incstd_all.hpp>
+#include <incstd/incstd_all.hpp>
 
 int main(int argc, char *argv[]) {
 
