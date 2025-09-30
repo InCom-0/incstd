@@ -19,16 +19,19 @@ using namespace std::literals;
 
 class SGR_builder {
 public:
-    const std::string &get_resRef() const { return _res; }
-    std::string        move_res() const { return std::move(_res); }
-    std::string        copy_res() const { return _res; }
+    std::string get() && { return std::move(_res); }
+    std::string get() const && { return _res; }
+    std::string get() & { return _res; }
+    std::string get() const & { return _res; }
+
+    const std::string &get_asRef() const & { return _res; }
 
     SGR_builder &add_string(std::string_view sv) {
         _res.append(sv);
         return *this;
     }
 
-    
+
     SGR_builder reset_all() {
         _res.append("\x1b[m"sv);
         return *this;
@@ -108,20 +111,24 @@ public:
         _res.append("\x1b[1m"sv);
         return *this;
     }
-    SGR_builder italic() {
+    SGR_builder faint() {
         _res.append("\x1b[2m"sv);
         return *this;
     }
-    SGR_builder underline() {
+    SGR_builder italic() {
         _res.append("\x1b[3m"sv);
+        return *this;
+    }
+    SGR_builder underline() {
+        _res.append("\x1b[4m"sv);
         return *this;
     }
     SGR_builder underlineDouble() {
         _res.append("\x1b[21m"sv);
         return *this;
     }
-    SGR_builder faint() {
-        _res.append("\x1b[2m"sv);
+    SGR_builder overline() {
+        _res.append("\x1b[53m"sv);
         return *this;
     }
     SGR_builder strike() {
@@ -140,8 +147,12 @@ public:
         _res.append("\x1b[23m"sv);
         return *this;
     }
-    SGR_builder notUnderlined() {
+    SGR_builder notUnderline() {
         _res.append("\x1b[24m"sv);
+        return *this;
+    }
+    SGR_builder notOverline() {
+        _res.append("\x1b[1m"sv);
         return *this;
     }
     SGR_builder notStrike() {
@@ -162,16 +173,8 @@ public:
         _res.append("\x1b[52m"sv);
         return *this;
     }
-    SGR_builder overlined() {
-        _res.append("\x1b[53m"sv);
-        return *this;
-    }
     SGR_builder notFrameEncircled() {
         _res.append("\x1b[54m"sv);
-        return *this;
-    }
-    SGR_builder notOverlined() {
-        _res.append("\x1b[1m"sv);
         return *this;
     }
 
@@ -223,7 +226,7 @@ public:
     }
 
 
-    friend std::ostream &operator<<(std::ostream &os, const SGR_builder &obj) { return os << obj._res; }
+    friend std::ostream &operator<<(std::ostream &os, const SGR_builder &obj) { return os << obj.get_asRef(); }
 
 private:
     std::string _res;
@@ -233,7 +236,21 @@ private:
     }
 };
 
-
 } // namespace ANSI
-
 } // namespace incom::standard::console
+
+
+// C++23 formatter only if compiling with C++23 or later
+#if __cplusplus >= 202300L
+#include <format>
+
+namespace std {
+template <>
+struct formatter<incom::standard::console::ANSI::SGR_builder> {
+    template <typename FormatContext>
+    auto format(const incom::standard::console::ANSI::SGR_builder &obj, FormatContext &ctx) {
+        return format_to(ctx.out(), "MyClass value = {}", obj.get_asRef());
+    }
+};
+} // namespace std
+#endif

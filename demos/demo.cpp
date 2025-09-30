@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
 
 
     using namespace incom::standard::console;
+    using namespace std::literals;
 
     // auto fg = ColorQuery::get_foreground();
     // if (fg) {
@@ -32,19 +33,30 @@ int main(int argc, char *argv[]) {
     // }
 
 
-    auto ttt  = ColorQuery::get_palette16();
-    auto ttt2 = ColorQuery::get_palette256();
+    auto curPalette = ColorQuery::get_palette256();
 
     // std::cout << "Palette16:\n";
     // for (auto &item : ttt.value()) {
-    //     std::cout << static_cast<int>(item[0]) << ", " << static_cast<int>(item[1]) << ", " << static_cast<int>(item[2])
+    //     std::cout << static_cast<int>(item[0]) << ", " << static_cast<int>(item[1]) << ", " <<
+    //     static_cast<int>(item[2])
     //               << '\n';
     // }
     std::cout << "Palette256:\n";
-    for (auto &item : ttt2.value()) {
+    for (auto &item : curPalette.value()) {
         std::cout << static_cast<int>(item[0]) << ", " << static_cast<int>(item[1]) << ", " << static_cast<int>(item[2])
                   << '\n';
     }
+
+    std::cout << ANSI::SGR_builder()
+                     .bold()
+                     .italic()
+                     .faint()
+                     .underline()
+                     .overline()
+                     .color_bg(curPalette->at(80))
+                     .color_fg(curPalette->at(5))
+                     .add_string("Hello World"sv)
+                     .reset_all();
 
     return 1;
 }
