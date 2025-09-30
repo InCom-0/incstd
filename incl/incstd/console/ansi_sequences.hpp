@@ -2,7 +2,7 @@
 #include <string>
 #include <string_view>
 
-#include "incstd/color/color_common.hpp"
+#include <incstd/color/color_common.hpp>
 
 
 namespace incom::standard::console {
