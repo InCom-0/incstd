@@ -144,10 +144,10 @@ constexpr std::string_view const &get_fromSGR_direct(SGR_map code) {
 }
 
 constexpr std::string_view get_fg(ANSI_Color16 col) {
-    return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 90 : static_cast<int>(col) + 30];
+    return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 82 : static_cast<int>(col) + 30];
 }
 constexpr std::string_view get_bg(ANSI_Color16 col) {
-    return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 100 : static_cast<int>(col) + 40];
+    return SGR_direct[static_cast<int>(col) > 7 ? static_cast<int>(col) + 92 : static_cast<int>(col) + 40];
 }
 
 class SGR_builder {
