@@ -295,7 +295,7 @@ private:
 
     static constexpr std::string make_osc_query(const std::string &body) { return "\033]" + body + '\a'; }
 
-    static constexpr Result queryPaletteIndex(int index) noexcept {
+    static constexpr result_t queryPaletteIndex(int index) noexcept {
         if (! index256_valid(index)) { return std::unexpected(err_terminal::Unsupported); }
         auto replyOrErr = send_osc_and_read(make_osc_query("4;" + std::to_string(index) + ";?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
@@ -304,7 +304,7 @@ private:
         return *rgbOrErr;
     }
 
-    static constexpr Result queryForeground() noexcept {
+    static constexpr result_t queryForeground() noexcept {
         auto replyOrErr = send_osc_and_read(make_osc_query("10;?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
         auto rgbOrErr = parse_color_from_reply(*replyOrErr);
@@ -312,7 +312,7 @@ private:
         return *rgbOrErr;
     }
 
-    static constexpr Result queryBackground() noexcept {
+    static constexpr result_t queryBackground() noexcept {
         auto replyOrErr = send_osc_and_read(make_osc_query("11;?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
         auto rgbOrErr = parse_color_from_reply(*replyOrErr);
