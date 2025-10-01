@@ -410,14 +410,14 @@ private:
 
 public:
     // Constructors
-    constexpr Color() {
+    Color() {
         sRGB      = {0, 0, 0};
         lRGB      = {0.0, 0.0, 0.0};
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    constexpr Color(const std::string &css) {
+    Color(const std::string &css) {
         auto c    = Converter::parseCssColor(css);
         sRGB      = c;
         lRGB      = Converter::sRGB_to_lRGB(sRGB);
@@ -425,21 +425,21 @@ public:
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    constexpr Color(const inc_sRGB &srgb_) {
+    Color(const inc_sRGB &srgb_) {
         sRGB      = srgb_;
         lRGB      = Converter::sRGB_to_lRGB(sRGB);
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    constexpr Color(const inc_lRGB &lrgb_) {
+    Color(const inc_lRGB &lrgb_) {
         sRGB      = Converter::lRGB_to_sRGB(lrgb_);
         lRGB      = lrgb_;
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    constexpr Color(const std::vector<double> &spectralR) {
+    Color(const std::vector<double> &spectralR) {
         if ((int)spectralR.size() != detail::SAMPLE_SIZE) {
             throw std::invalid_argument("spectralR must have length SIZE");
         }
@@ -449,7 +449,7 @@ public:
         sRGB      = Converter::lRGB_to_sRGB(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    constexpr Color(const arr_dbl38 &spectralR) {
+    Color(const arr_dbl38 &spectralR) {
         R         = spectralR;
         XYZ       = detail::mulMatVec(detail::CIE::CMF, R);
         lRGB      = Converter::XYZ_to_lRGB(XYZ);
@@ -458,11 +458,11 @@ public:
     }
 
     // Getters
-    constexpr inc_lRGB const &OKLab() const {
+    inc_lRGB const &OKLab() const {
         if (! _OKLab) { _OKLab = Converter::XYZ_to_OKLab(XYZ); }
         return *_OKLab;
     }
-    constexpr inc_lRGB const &OKLCh() const {
+    inc_lRGB const &OKLCh() const {
         if (! _OKLCh) { _OKLCh = Converter::OKLab_to_OKLCh(OKLab()); }
         return *_OKLCh;
     }
