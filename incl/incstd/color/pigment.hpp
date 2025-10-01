@@ -193,26 +193,23 @@ inline constexpr std::array<arr_dbl38, 3> CMF = {
 // see https://github.com/color-js/color.js/blob/main/src/spaces/oklab.js}
 namespace CONVERSION {
 inline constexpr std::array<inc_lRGB, 3> RGB_XYZ{{{0.41239079926595934, 0.357584339383878, 0.1804807884018343},
-                                                      {0.21263900587151027, 0.715168678767756, 0.07219231536073371},
-                                                      {0.01933081871559182, 0.11919477979462598, 0.9505321522496607}}};
-inline constexpr std::array<inc_lRGB, 3> XYZ_RGB = {
-    {{3.2409699419045226, -1.537383177570094, -0.4986107602930034},
-     {-0.9692436362808796, 1.8759675015077202, 0.04155505740717559},
-     {0.05563007969699366, -0.20397695888897652, 1.0569715142428786}}};
+                                                  {0.21263900587151027, 0.715168678767756, 0.07219231536073371},
+                                                  {0.01933081871559182, 0.11919477979462598, 0.9505321522496607}}};
+inline constexpr std::array<inc_lRGB, 3> XYZ_RGB = {{{3.2409699419045226, -1.537383177570094, -0.4986107602930034},
+                                                     {-0.9692436362808796, 1.8759675015077202, 0.04155505740717559},
+                                                     {0.05563007969699366, -0.20397695888897652, 1.0569715142428786}}};
 inline constexpr std::array<inc_lRGB, 3> XYZ_LMS = {{{0.819022437996703, 0.3619062600528904, -0.1288737815209879},
-                                                         {0.0329836539323885, 0.9292868615863434, 0.0361446663506424},
-                                                         {0.0481771893596242, 0.2642395317527308, 0.6335478284694309}}};
-inline constexpr std::array<inc_lRGB, 3> LMS_XYZ = {
-    {{1.2268798758459243, -0.5578149944602171, 0.2813910456659647},
-     {-0.0405757452148008, 1.112286803280317, -0.0717110580655164},
-     {-0.0763729366746601, -0.4214933324022432, 1.5869240198367816}}};
-inline constexpr std::array<inc_lRGB, 3> LMS_LAB = {
-    {{0.210454268309314, 0.7936177747023054, -0.0040720430116193},
-     {1.9779985324311684, -2.4285922420485799, 0.450593709617411},
-     {0.0259040424655478, 0.7827717124575296, -0.8086757549230774}}};
+                                                     {0.0329836539323885, 0.9292868615863434, 0.0361446663506424},
+                                                     {0.0481771893596242, 0.2642395317527308, 0.6335478284694309}}};
+inline constexpr std::array<inc_lRGB, 3> LMS_XYZ = {{{1.2268798758459243, -0.5578149944602171, 0.2813910456659647},
+                                                     {-0.0405757452148008, 1.112286803280317, -0.0717110580655164},
+                                                     {-0.0763729366746601, -0.4214933324022432, 1.5869240198367816}}};
+inline constexpr std::array<inc_lRGB, 3> LMS_LAB = {{{0.210454268309314, 0.7936177747023054, -0.0040720430116193},
+                                                     {1.9779985324311684, -2.4285922420485799, 0.450593709617411},
+                                                     {0.0259040424655478, 0.7827717124575296, -0.8086757549230774}}};
 inline constexpr std::array<inc_lRGB, 3> LAB_LMS = {{{1.0, 0.3963377773761749, 0.2158037573099136},
-                                                         {1.0, -0.1055613458156586, -0.0638541728258133},
-                                                         {1.0, -0.0894841775298119, -1.2914855480194092}}};
+                                                     {1.0, -0.1055613458156586, -0.0638541728258133},
+                                                     {1.0, -0.0894841775298119, -1.2914855480194092}}};
 } // namespace CONVERSION
 
 
@@ -356,8 +353,8 @@ public:
     static constexpr inc_lRGB OKLab_to_OKLCh(const inc_lRGB &OKLab);
     static constexpr inc_lRGB OKLCh_to_OKLab(const inc_lRGB &OKLCh);
 
-    static constexpr arr_dbl38    parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
-    static constexpr inc_sRGB parseCssColor(const std::string &str);
+    static constexpr arr_dbl38 parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
+    static constexpr inc_sRGB  parseCssColor(const std::string &str);
 
     static constexpr double luminance_from_lRGB(const inc_lRGB &lRBG) {
         // Only the Y from the XYZ tupple needs to be computed for luminance
@@ -395,10 +392,10 @@ public:
 class Color {
 public:
     // Public data
-    inc_sRGB sRGB; // 0..255 (no alpha, ignoring alpha)
-    inc_lRGB lRGB; // linear RGB [0..1]
-    inc_lRGB XYZ;  // XYZ space
-    arr_dbl38    R;    // spectral reflectance, size = SIZE
+    inc_sRGB  sRGB; // 0..255 (no alpha, ignoring alpha)
+    inc_lRGB  lRGB; // linear RGB [0..1]
+    inc_lRGB  XYZ;  // XYZ space
+    arr_dbl38 R;    // spectral reflectance, size = SIZE
 
     // Tinting strength (default 1)
     double tintingStrength = 1.0;
@@ -406,20 +403,20 @@ public:
 
 private:
     // Lazy-computed caches
-    mutable std::optional<inc_lRGB> _OKLab;
-    mutable std::optional<inc_lRGB> _OKLCh;
-    mutable std::optional<arr_dbl38>    _KS;
+    mutable std::optional<inc_lRGB>  _OKLab;
+    mutable std::optional<inc_lRGB>  _OKLCh;
+    mutable std::optional<arr_dbl38> _KS;
 
 public:
     // Constructors
-    Color() {
+    constexpr Color() {
         sRGB      = {0, 0, 0};
         lRGB      = {0.0, 0.0, 0.0};
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    Color(const std::string &css) {
+    constexpr Color(const std::string &css) {
         auto c    = Converter::parseCssColor(css);
         sRGB      = c;
         lRGB      = Converter::sRGB_to_lRGB(sRGB);
@@ -427,21 +424,21 @@ public:
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    Color(const inc_sRGB &srgb_) {
+    constexpr Color(const inc_sRGB &srgb_) {
         sRGB      = srgb_;
         lRGB      = Converter::sRGB_to_lRGB(sRGB);
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    Color(const inc_lRGB &lrgb_) {
+    constexpr Color(const inc_lRGB &lrgb_) {
         sRGB      = Converter::lRGB_to_sRGB(lrgb_);
         lRGB      = lrgb_;
         R         = Converter::parseSpectralReflectanceFromLRGB(lRGB);
         XYZ       = Converter::lRGB_to_XYZ(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    Color(const std::vector<double> &spectralR) {
+    constexpr Color(const std::vector<double> &spectralR) {
         if ((int)spectralR.size() != detail::SAMPLE_SIZE) {
             throw std::invalid_argument("spectralR must have length SIZE");
         }
@@ -451,7 +448,7 @@ public:
         sRGB      = Converter::lRGB_to_sRGB(lRGB);
         luminance = std::max(XYZ.g, detail::EPS_MIN);
     }
-    Color(const arr_dbl38 &spectralR) {
+    constexpr Color(const arr_dbl38 &spectralR) {
         R         = spectralR;
         XYZ       = detail::mulMatVec(detail::CIE::CMF, R);
         lRGB      = Converter::XYZ_to_lRGB(XYZ);
@@ -460,15 +457,15 @@ public:
     }
 
     // Getters
-    const inc_lRGB &OKLab() const {
+    constexpr inc_lRGB const &OKLab() const {
         if (! _OKLab) { _OKLab = Converter::XYZ_to_OKLab(XYZ); }
         return *_OKLab;
     }
-    const inc_lRGB &OKLCh() const {
+    constexpr inc_lRGB const &OKLCh() const {
         if (! _OKLCh) { _OKLCh = Converter::OKLab_to_OKLCh(OKLab()); }
         return *_OKLCh;
     }
-    const arr_dbl38 &KS() const {
+    constexpr arr_dbl38 const &KS() const {
         if (! _KS) {
             _KS           = arr_dbl38{};
             auto &_KS_ref = _KS.value();
@@ -586,17 +583,17 @@ constexpr inc_lRGB Converter::lRGB_to_XYZ(const inc_lRGB &lRGB) {
 constexpr inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
     // lms = mat * XYZ
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::XYZ_LMS, XYZ);
-    lms.r            = std::cbrt(lms.r);
-    lms.g            = std::cbrt(lms.g);
-    lms.b            = std::cbrt(lms.b);
+    lms.r        = std::cbrt(lms.r);
+    lms.g        = std::cbrt(lms.g);
+    lms.b        = std::cbrt(lms.b);
     inc_lRGB lab = detail::mulMatVec(detail::CONVERSION::LMS_LAB, lms);
     return lab;
 }
 constexpr inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::LAB_LMS, OKLab);
-    lms.r            = std::pow(lms.r, 3);
-    lms.g            = std::pow(lms.g, 3);
-    lms.b            = std::pow(lms.b, 3);
+    lms.r        = std::pow(lms.r, 3);
+    lms.g        = std::pow(lms.g, 3);
+    lms.b        = std::pow(lms.b, 3);
     inc_lRGB XYZ = detail::mulMatVec(detail::CONVERSION::LMS_XYZ, lms);
     return XYZ;
 }
@@ -616,7 +613,7 @@ constexpr arr_dbl38 Converter::parseSpectralReflectanceFromLRGB(const inc_lRGB &
     // The code subtracts minimum w, c, m, y, r, g, b contributions using detail::BASE_SPECTRA.
 
     double const w   = std::min(std::min(lRGB.r, lRGB.g), lRGB.b);
-    inc_lRGB cpy = {lRGB.r - w, lRGB.g - w, lRGB.b - w};
+    inc_lRGB     cpy = {lRGB.r - w, lRGB.g - w, lRGB.b - w};
 
     double const c = std::min(cpy.g, cpy.b);
     double const m = std::min(cpy.r, cpy.b);
@@ -711,7 +708,7 @@ constexpr Color Color::gamutMap(const Color &color, double jnd, double eps) {
     // clipped = lRGB_to_OKLab( clamp each component )
     inc_lRGB clippedOK = Converter::XYZ_to_OKLab(Converter::lRGB_to_XYZ(
         {std::clamp(color.lRGB.r, 0.0, 1.0), std::clamp(color.lRGB.g, 0.0, 1.0), std::clamp(color.lRGB.b, 0.0, 1.0)}));
-    double       E         = detail::deltaEOK(clippedOK, Converter::XYZ_to_OKLab(Converter::lRGB_to_XYZ(color.lRGB)));
+    double   E         = detail::deltaEOK(clippedOK, Converter::XYZ_to_OKLab(Converter::lRGB_to_XYZ(color.lRGB)));
     if (E < jnd) {
         // short-circuit
         inc_lRGB tmpXYZ  = Converter::OKLab_to_XYZ(clippedOK);
@@ -839,9 +836,9 @@ template <typename... PR_Cs_F>
 requires(sizeof...(PR_Cs_F) > 1) && (std::same_as<std::remove_cvref_t<PR_Cs_F>, std::pair<Color, double>> && ...)
 constexpr Color pigment::blend(const PR_Cs_F &...colors) {
 
-    std::vector<double>       factors;
+    std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(sizeof...(PR_Cs_F));
     lRGBs.reserve(sizeof...(PR_Cs_F));
     luminances.reserve(sizeof...(PR_Cs_F));
@@ -857,9 +854,9 @@ constexpr Color pigment::blend(const PR_Cs_F &...colors) {
 template <typename... Cs>
 requires(sizeof...(Cs) > 1) && (std::same_as<std::remove_cvref_t<Cs>, Color> && ...)
 constexpr Color pigment::blend(const Cs &...colors) {
-    std::vector<double>       factors(sizeof...(Cs), 1);
+    std::vector<double>   factors(sizeof...(Cs), 1);
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     lRGBs.reserve(sizeof...(Cs));
     luminances.reserve(sizeof...(Cs));
 
@@ -873,9 +870,9 @@ constexpr Color pigment::blend(const Cs &...colors) {
 // L_RGB blending
 inline constexpr Color pigment::blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f) {
 
-    std::vector<double>       factors;
+    std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(colors_lrgb_f.size());
     lRGBs.reserve(colors_lrgb_f.size());
     luminances.reserve(colors_lrgb_f.size());
@@ -905,9 +902,9 @@ template <typename... PR_LRGBs_F>
 requires(sizeof...(PR_LRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_LRGBs_F>, std::pair<inc_lRGB, double>> && ...)
 constexpr Color pigment::blend(const PR_LRGBs_F &...colors) {
-    std::vector<double>       factors;
+    std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(sizeof...(PR_LRGBs_F));
     lRGBs.reserve(sizeof...(PR_LRGBs_F));
     luminances.reserve(sizeof...(PR_LRGBs_F));
@@ -923,9 +920,9 @@ constexpr Color pigment::blend(const PR_LRGBs_F &...colors) {
 template <typename... LRGBs>
 requires(sizeof...(LRGBs) > 1) && (std::same_as<std::remove_cvref_t<LRGBs>, inc_lRGB> && ...)
 constexpr Color pigment::blend(const LRGBs &...colors) {
-    std::vector<double>       factors(sizeof...(LRGBs), 1.0);
+    std::vector<double>   factors(sizeof...(LRGBs), 1.0);
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     lRGBs.reserve(sizeof...(LRGBs));
     luminances.reserve(sizeof...(LRGBs));
 
@@ -938,9 +935,9 @@ constexpr Color pigment::blend(const LRGBs &...colors) {
 
 // S_RGB blending
 inline constexpr Color pigment::blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f) {
-    std::vector<double>       factors;
+    std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(colors_srgb_f.size());
     lRGBs.reserve(colors_srgb_f.size());
     luminances.reserve(colors_srgb_f.size());
@@ -955,9 +952,9 @@ inline constexpr Color pigment::blend(const std::vector<std::pair<inc_sRGB, doub
 }
 
 inline constexpr Color pigment::blend(const std::vector<inc_sRGB> &colors_srgb) {
-    std::vector<double>       factors(colors_srgb.size(), 1.0);
+    std::vector<double>   factors(colors_srgb.size(), 1.0);
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(colors_srgb.size());
     lRGBs.reserve(colors_srgb.size());
     luminances.reserve(colors_srgb.size());
@@ -974,9 +971,9 @@ template <typename... PR_SRGBs_F>
 requires(sizeof...(PR_SRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_SRGBs_F>, std::pair<inc_sRGB, double>> && ...)
 constexpr Color pigment::blend(const PR_SRGBs_F &...colors) {
-    std::vector<double>       factors;
+    std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     factors.reserve(sizeof...(PR_SRGBs_F));
     lRGBs.reserve(sizeof...(PR_SRGBs_F));
     luminances.reserve(sizeof...(PR_SRGBs_F));
@@ -992,9 +989,9 @@ constexpr Color pigment::blend(const PR_SRGBs_F &...colors) {
 template <typename... SRGBs>
 requires(sizeof...(SRGBs) > 1) && (std::same_as<std::remove_cvref_t<SRGBs>, inc_sRGB> && ...)
 constexpr Color pigment::blend(const SRGBs &...colors) {
-    std::vector<double>       factors(sizeof...(SRGBs), 1.0);
+    std::vector<double>   factors(sizeof...(SRGBs), 1.0);
     std::vector<inc_lRGB> lRGBs;
-    std::vector<double>       luminances;
+    std::vector<double>   luminances;
     lRGBs.reserve(sizeof...(SRGBs));
     luminances.reserve(sizeof...(SRGBs));
 
@@ -1043,9 +1040,9 @@ inline constexpr Color pigment::gradient(double t, const std::vector<std::pair<C
 }
 
 
-inline constexpr Color detail::pigment_blend_HLPR(std::vector<double> const       &factors,
+inline constexpr Color detail::pigment_blend_HLPR(std::vector<double> const   &factors,
                                                   std::vector<inc_lRGB> const &lRGBs,
-                                                  std::vector<double> const       &luminances) {
+                                                  std::vector<double> const   &luminances) {
     if (factors.size() == 0 || factors.size() != lRGBs.size() || lRGBs.size() != luminances.size()) {
         std::exit(1); // Impossible, we are calling the enclosing lambda wrong
     }
