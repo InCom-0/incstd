@@ -299,7 +299,7 @@ inline constexpr bool inGamut(const inc_lRGB &lRGB, double epsilon = 0.0) {
     return true;
 }
 
-inline constexpr double deltaEOK(const inc_lRGB &OK1, const inc_lRGB &OK2) {
+inline double deltaEOK(const inc_lRGB &OK1, const inc_lRGB &OK2) {
     double d0 = OK1.r - OK2.r;
     double d1 = OK1.g - OK2.g;
     double d2 = OK1.b - OK2.b;
@@ -327,7 +327,7 @@ inline constexpr double KS_func(double R) {
 // </pre>
 //
 // provides the appropriate transformation for blending multiple pigment spectra.
-inline constexpr double KM_func(double KS) {
+inline double KM_func(double KS) {
     return 1.0 + KS - std::sqrt(std::pow(KS, 2) + (2.0 * KS));
 }
 
@@ -344,17 +344,18 @@ constexpr Color pigment_blend_HLPR(std::vector<double> const &factors, std::vect
 // Converter is a uninstantiable 'static utility' class for converting various color formats between each other
 class Converter {
 public:
-    static constexpr inc_lRGB sRGB_to_lRGB(const inc_sRGB &sRGB);
-    static constexpr inc_sRGB lRGB_to_sRGB(const inc_lRGB &lRGB);
-    static constexpr inc_lRGB XYZ_to_lRGB(const inc_lRGB &XYZ);
-    static constexpr inc_lRGB lRGB_to_XYZ(const inc_lRGB &lRGB);
-    static constexpr inc_lRGB XYZ_to_OKLab(const inc_lRGB &XYZ);
-    static constexpr inc_lRGB OKLab_to_XYZ(const inc_lRGB &OKLab);
-    static constexpr inc_lRGB OKLab_to_OKLCh(const inc_lRGB &OKLab);
-    static constexpr inc_lRGB OKLCh_to_OKLab(const inc_lRGB &OKLCh);
+    // All the following should be made constexpr once MSVC gets up to speed
+    static inc_lRGB sRGB_to_lRGB(const inc_sRGB &sRGB);
+    static inc_sRGB lRGB_to_sRGB(const inc_lRGB &lRGB);
+    static inc_lRGB XYZ_to_lRGB(const inc_lRGB &XYZ);
+    static inc_lRGB lRGB_to_XYZ(const inc_lRGB &lRGB);
+    static inc_lRGB XYZ_to_OKLab(const inc_lRGB &XYZ);
+    static inc_lRGB OKLab_to_XYZ(const inc_lRGB &OKLab);
+    static inc_lRGB OKLab_to_OKLCh(const inc_lRGB &OKLab);
+    static inc_lRGB OKLCh_to_OKLab(const inc_lRGB &OKLCh);
 
-    static constexpr arr_dbl38 parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
-    static constexpr inc_sRGB  parseCssColor(const std::string &str);
+    static constexpr arr_dbl38          parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
+    static constexpr inc_sRGB parseCssColor(const std::string &str);
 
     static constexpr double luminance_from_lRGB(const inc_lRGB &lRBG) {
         // Only the Y from the XYZ tupple needs to be computed for luminance
@@ -566,21 +567,21 @@ constexpr Color gradient(double t, const std::vector<std::pair<Color, double>> &
 // ### IMPLEMENTATION PART    ####
 // ###############################
 
-constexpr inc_lRGB Converter::sRGB_to_lRGB(const inc_sRGB &sRGB) {
+inline inc_lRGB Converter::sRGB_to_lRGB(const inc_sRGB &sRGB) {
     return {detail::uncompand(sRGB.r / 255.0), detail::uncompand(sRGB.g / 255.0), detail::uncompand(sRGB.b / 255.0)};
 }
-constexpr inc_sRGB Converter::lRGB_to_sRGB(const inc_lRGB &lRGB) {
+inline inc_sRGB Converter::lRGB_to_sRGB(const inc_lRGB &lRGB) {
     return {std::uint8_t(std::round(detail::compand(lRGB.r) * 255.0)),
             std::uint8_t(std::round(detail::compand(lRGB.g) * 255.0)),
             std::uint8_t(std::round(detail::compand(lRGB.b) * 255.0))};
 }
-constexpr inc_lRGB Converter::XYZ_to_lRGB(const inc_lRGB &XYZ) {
+inline inc_lRGB Converter::XYZ_to_lRGB(const inc_lRGB &XYZ) {
     return detail::mulMatVec(detail::CONVERSION::XYZ_RGB, XYZ);
 }
-constexpr inc_lRGB Converter::lRGB_to_XYZ(const inc_lRGB &lRGB) {
+inline inc_lRGB Converter::lRGB_to_XYZ(const inc_lRGB &lRGB) {
     return detail::mulMatVec(detail::CONVERSION::RGB_XYZ, lRGB);
 }
-constexpr inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
+inline inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
     // lms = mat * XYZ
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::XYZ_LMS, XYZ);
     lms.r        = std::cbrt(lms.r);
@@ -589,7 +590,7 @@ constexpr inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
     inc_lRGB lab = detail::mulMatVec(detail::CONVERSION::LMS_LAB, lms);
     return lab;
 }
-constexpr inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
+inline inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::LAB_LMS, OKLab);
     lms.r        = std::pow(lms.r, 3);
     lms.g        = std::pow(lms.g, 3);
@@ -597,12 +598,12 @@ constexpr inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
     inc_lRGB XYZ = detail::mulMatVec(detail::CONVERSION::LMS_XYZ, lms);
     return XYZ;
 }
-constexpr inc_lRGB Converter::OKLab_to_OKLCh(const inc_lRGB &OKLab) {
+inline inc_lRGB Converter::OKLab_to_OKLCh(const inc_lRGB &OKLab) {
     double h = std::atan2(OKLab.b, OKLab.g) * 180.0 / std::numbers::pi;
     if (h < 0.0) { h += 360.0; }
     return {OKLab.r, std::sqrt(std::pow(OKLab.g, 2) + std::pow(OKLab.b, 2)), h};
 }
-constexpr inc_lRGB Converter::OKLCh_to_OKLab(const inc_lRGB &OKLCh) {
+inline inc_lRGB Converter::OKLCh_to_OKLab(const inc_lRGB &OKLCh) {
     return {OKLCh.r, OKLCh.g * std::cos(OKLCh.b * std::numbers::pi / 180.0),
             OKLCh.g * std::sin(OKLCh.b * std::numbers::pi / 180.0)};
 }
@@ -1005,7 +1006,7 @@ constexpr Color pigment::blend(const SRGBs &...colors) {
 
 
 // Generates a palette of colors transitioning between two colors.
-constexpr std::vector<Color> pigment::palette(Color const &a, Color const &b, size_t const sz) {
+inline constexpr std::vector<Color> pigment::palette(Color const &a, Color const &b, size_t const sz) {
     std::vector<Color> out;
     out.reserve(sz);
     for (int i = 0; i < sz; ++i) { out.push_back(pigment::blend({{a, double(sz - 1 - i)}, {b, double(i)}})); }
