@@ -331,7 +331,7 @@ inline double KM_func(double KS) {
     return 1.0 + KS - std::sqrt(std::pow(KS, 2) + (2.0 * KS));
 }
 
-constexpr Color pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
+Color pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
                                    std::vector<double> const &luminances);
 
 } // namespace detail
