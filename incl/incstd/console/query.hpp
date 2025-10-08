@@ -155,7 +155,7 @@ public:
         return color_schemes::defaultScheme256.palette[index];
     }
 
-private:
+public:
     // ────────────── INTERNAL ──────────────
 
     [[nodiscard]] static constexpr bool index16_valid(int idx) noexcept { return idx >= 0 && idx <= 15; }
