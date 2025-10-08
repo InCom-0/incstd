@@ -20,13 +20,36 @@ struct scheme256 {
     inc_sRGB   selection;
 };
 
+inline constexpr scheme16 conv_s256s16(const scheme256 &from) {
+    return scheme16{.palette{from.palette[0], from.palette[1], from.palette[2], from.palette[3], from.palette[4],
+                             from.palette[5], from.palette[6], from.palette[7], from.palette[8], from.palette[9],
+                             from.palette[10], from.palette[11], from.palette[12], from.palette[13], from.palette[14],
+                             from.palette[15]},
+                    .foreground{from.foreground},
+                    .backgrond{from.backgrond},
+                    .cursor{from.cursor},
+                    .selection{from.selection}};
+}
+
+inline constexpr scheme256 conv_s16s256(const scheme16 &from) {
+    scheme256 res{.palette{from.palette[0], from.palette[1], from.palette[2], from.palette[3], from.palette[4],
+                           from.palette[5], from.palette[6], from.palette[7], from.palette[8], from.palette[9],
+                           from.palette[10], from.palette[11], from.palette[12], from.palette[13], from.palette[14],
+                           from.palette[15]},
+                  .foreground{from.foreground},
+                  .backgrond{from.backgrond},
+                  .cursor{from.cursor},
+                  .selection{from.selection}};
+    for (size_t i = 16; i < 256; ++i) { res.palette[i] = inc_sRGB{255, 255, 255}; }
+    return res;
+}
 
 inline constexpr int get_SGR_fg(ANSI_Color16 col) {
-    static constexpr std::array<int, 16> map{30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97};
+    constexpr std::array<int, 16> map{30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97};
     return map[static_cast<int>(col)];
 }
 inline constexpr int get_SGR_bg(ANSI_Color16 col) {
-    static constexpr std::array<int, 16> map{40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107};
+    constexpr std::array<int, 16> map{40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107};
     return map[static_cast<int>(col)];
 }
 
