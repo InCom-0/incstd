@@ -165,6 +165,14 @@ private:
     // So far nothing here
     // In the future might have some implementation once Windows terminal reports actually used colors with OSC 4
 
+    static constexpr result_t queryPaletteIndex(int index) noexcept {
+        return std::unexpected(err_terminal::Unsupported);
+    }
+
+    static constexpr result_t queryForeground() noexcept { return std::unexpected(err_terminal::Unsupported); }
+
+    static constexpr result_t queryBackground() noexcept { return std::unexpected(err_terminal::Unsupported); }
+
 #else
     struct uniq_fd {
         int fd{-1};
