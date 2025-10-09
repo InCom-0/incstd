@@ -130,7 +130,7 @@ inline std::expected<fs::path, std::filesystem::file_type> find_configFile(const
 #elif defined(__APPLE__)
         // 2. macOS Application Support
         if (const char *home = std::getenv("HOME")) {
-            pthToTry = fs::path(home) / "Library" / "Application Support" / appName / fileName;
+            pthToTry = fs::path(home) / "Library" / "Application Support" / appName / file;
             if (fs::exists(pthToTry)) { return pthToTry; }
         }
 #else
