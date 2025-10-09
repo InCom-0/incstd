@@ -136,11 +136,11 @@ inline std::expected<fs::path, std::filesystem::file_type> find_configFile(const
 #else
         // 2. Linux/Unix: XDG or ~/.config
         if (const char *xdg = std::getenv("XDG_CONFIG_HOME")) {
-            pthToTry = fs::path(xdg) / appName / fileName;
+            pthToTry = fs::path(xdg) / appName / file;
             if (fs::exists(pthToTry)) { return pthToTry; }
         }
         if (const char *home = std::getenv("HOME")) {
-            pthToTry = fs::path(xdg) / ".config" / appName / fileName;
+            pthToTry = fs::path(home) / ".config" / appName / file;
             if (fs::exists(pthToTry)) { return pthToTry; }
         }
 #endif
