@@ -11,6 +11,8 @@ struct scheme16 {
     inc_sRGB  backgrond;
     inc_sRGB  cursor;
     inc_sRGB  selection;
+
+    inc_sRGB const &get_nonBWColor(size_t id) const { return palette.at(id + 1 + (id > 7)); }
 };
 struct scheme256 {
     palette256 palette;
@@ -18,6 +20,8 @@ struct scheme256 {
     inc_sRGB   backgrond;
     inc_sRGB   cursor;
     inc_sRGB   selection;
+
+    inc_sRGB const &get_nonBWColor(size_t id) const { return palette.at(id > 11 ? id : (id + 1 + (id > 7))); }
 };
 
 inline constexpr scheme16 conv_s256s16(const scheme256 &from) {
