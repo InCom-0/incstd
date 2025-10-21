@@ -273,6 +273,6 @@ inline constexpr scheme16 campbell_powershell{
 
 } // namespace windows_terminal
 
-inline constexpr scheme16 const  &defaultScheme16  = windows_terminal::campbell;
+inline constexpr scheme16 const  &defaultScheme16  = windows_terminal::dimidium;
 inline constexpr scheme256 const &defaultScheme256 = windows_terminal::campbell256;
 } // namespace incom::standard::console::color_schemes
