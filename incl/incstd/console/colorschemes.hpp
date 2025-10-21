@@ -120,15 +120,31 @@ inline constexpr scheme16 campbell{
     {255, 255, 255},
     {255, 255, 255}};
 
+// https://github.com/dofuuz/dimidium
 inline constexpr scheme16 dimidium{
-    {{inc_sRGB{0, 0, 0}, inc_sRGB{204, 36, 29}, inc_sRGB{80, 204, 80}, inc_sRGB{204, 204, 29}, inc_sRGB{29, 80, 204},
-      inc_sRGB{204, 29, 204}, inc_sRGB{29, 204, 204}, inc_sRGB{204, 204, 204}, inc_sRGB{102, 102, 102},
-      inc_sRGB{204, 102, 102}, inc_sRGB{102, 204, 102}, inc_sRGB{204, 204, 102}, inc_sRGB{102, 102, 204},
-      inc_sRGB{204, 102, 204}, inc_sRGB{102, 204, 204}, inc_sRGB{204, 204, 204}}},
-    {204, 204, 204}, // foreground
-    {0, 0, 0},       // background
-    {204, 204, 204}, // cursor
-    {204, 204, 204}  // selection
+    {
+        // ANSI 0–15 colors (from Dimidium .itermcolors)
+        inc_sRGB{0, 0, 0},       // 0  black
+        inc_sRGB{207, 73, 76},   // 1  red
+        inc_sRGB{96, 180, 66},   // 2  green
+        inc_sRGB{219, 156, 17},  // 3  yellow
+        inc_sRGB{5, 117, 216},   // 4  blue
+        inc_sRGB{175, 94, 210},  // 5  magenta
+        inc_sRGB{29, 182, 187},  // 6  cyan
+        inc_sRGB{186, 183, 182}, // 7  white (normal)
+        inc_sRGB{129, 126, 126}, // 8  bright black (grey)
+        inc_sRGB{255, 100, 59},  // 9  bright red
+        inc_sRGB{55, 229, 123},  // 10 bright green
+        inc_sRGB{252, 205, 26},  // 11 bright yellow
+        inc_sRGB{104, 141, 253}, // 12 bright blue
+        inc_sRGB{237, 111, 233}, // 13 bright magenta
+        inc_sRGB{50, 224, 251},  // 14 bright cyan
+        inc_sRGB{222, 227, 228}  // 15 bright white
+    },
+    {186, 183, 182},             // foreground (from .itermcolors)
+    {20, 20, 20},                // background (from .itermcolors)
+    {55, 229, 123},              // cursor (from .itermcolors)
+    {141, 184, 229}              // selection (from .itermcolors)
 };
 
 inline constexpr scheme16 dark_plus{
