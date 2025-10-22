@@ -269,9 +269,41 @@ inline constexpr scheme16 campbell_powershell{
     {255, 255, 255}, // cursor
     {255, 255, 255}  // selection
 };
-
-
 } // namespace windows_terminal
+
+namespace other_sources {
+inline constexpr scheme16 monochrome{
+    {
+        // ANSI 0–15 colors (monochrome)
+        inc_sRGB{13, 13, 13},    //
+        
+        inc_sRGB{119, 119, 119}, //
+        inc_sRGB{59, 59, 59},    //
+        inc_sRGB{179, 179, 179}, //
+        inc_sRGB{89, 89, 89},    //
+        inc_sRGB{209, 209, 209}, //
+        inc_sRGB{149, 149, 149}, //
+
+        inc_sRGB{242, 242, 242}, //
+
+
+        inc_sRGB{26, 26, 26},    //
+
+        inc_sRGB{132, 132, 132}, //
+        inc_sRGB{72, 72, 72},    //
+        inc_sRGB{192, 192, 192}, //
+        inc_sRGB{102, 102, 102}, //
+        inc_sRGB{222, 222, 222}, //
+        inc_sRGB{162, 162, 162}, //
+
+        inc_sRGB{255, 255, 255} //
+    },
+    {242, 242, 242},            // foreground (#F2F2F2)
+    {13, 13, 13},               // background (#0D0D0D)
+    {242, 242, 242},            // cursor (set to match foreground for monochrome)
+    {89, 89, 89}                // selection (using muted gray for contrast)
+};
+} // namespace other_sources
 
 inline constexpr scheme16 const  &defaultScheme16  = windows_terminal::dimidium;
 inline constexpr scheme256 const &defaultScheme256 = windows_terminal::campbell256;
