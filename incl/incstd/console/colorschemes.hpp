@@ -287,7 +287,7 @@ inline constexpr scheme16 monochrome{
         inc_sRGB{242, 242, 242}, //
 
 
-        inc_sRGB{59, 59, 59}, //
+        inc_sRGB{89, 89, 89}, //
 
         inc_sRGB{162, 162, 162}, //
         inc_sRGB{222, 222, 222}, //
