@@ -1,4 +1,5 @@
 #pragma once
+#include "incstd/color/color_common.hpp"
 #include <array>
 #include <charconv>
 #include <chrono>
@@ -89,6 +90,24 @@ public:
 #endif
     }
 
+    // cursor
+    [[nodiscard]] static constexpr result_t get_cursorCol() {
+#ifdef _WIN32
+        return get_defaultColor(static_cast<int>(ANSI_Color16::Bright_White));
+#else
+        return queryBackground();
+#endif
+    }
+
+    [[nodiscard]] static constexpr inc_sRGB get_cursorCol_fb() noexcept {
+#ifdef _WIN32
+        return get_defaultColor(static_cast<int>(ANSI_Color16::Bright_White));
+#else
+        auto res = queryBackground();
+        return res ? *res : get_defaultColor(0);
+#endif
+    }
+
     // get all 16 colors at once
     [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16() noexcept {
         palette16 colors{};
@@ -172,6 +191,8 @@ public:
     static constexpr result_t queryForeground() noexcept { return std::unexpected(err_terminal::Unsupported); }
 
     static constexpr result_t queryBackground() noexcept { return std::unexpected(err_terminal::Unsupported); }
+
+    static constexpr result_t queryCursorCol() noexcept { return std::unexpected(err_terminal::Unsupported); }
 
 #else
     struct uniq_fd {
@@ -326,6 +347,14 @@ public:
 
     static constexpr result_t queryBackground() noexcept {
         auto replyOrErr = send_osc_and_read(make_osc_query("11;?"));
+        if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
+        auto rgbOrErr = parse_color_from_reply(*replyOrErr);
+        if (! rgbOrErr) { return std::unexpected(rgbOrErr.error()); }
+        return *rgbOrErr;
+    }
+
+    static constexpr result_t queryCursorCol() noexcept {
+        auto replyOrErr = send_osc_and_read(make_osc_query("12;?"));
         if (! replyOrErr) { return std::unexpected(replyOrErr.error()); }
         auto rgbOrErr = parse_color_from_reply(*replyOrErr);
         if (! rgbOrErr) { return std::unexpected(rgbOrErr.error()); }
