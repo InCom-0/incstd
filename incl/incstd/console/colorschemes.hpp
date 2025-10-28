@@ -8,6 +8,7 @@
 
 namespace incom::standard::console::color_schemes {
 using namespace incom::standard::color;
+using namespace std::literals;
 
 struct scheme16 {
     std::optional<std::string> name = std::nullopt;
@@ -68,7 +69,7 @@ inline constexpr int get_SGR_bg(ANSI_Color16 col) {
 
 namespace windows_terminal {
 
-inline constexpr scheme256 campbell256{
+inline const scheme256 campbell256{
     "campbell",
     {{{12, 12, 12},    {197, 15, 31},   {19, 161, 14},   {193, 156, 0},   {0, 55, 218},    {136, 23, 152},
       {58, 150, 221},  {204, 204, 204}, {118, 118, 118}, {231, 72, 86},   {22, 198, 12},   {249, 241, 165},
@@ -119,7 +120,7 @@ inline constexpr scheme256 campbell256{
     {255, 255, 255}};
 
 
-inline constexpr scheme16 campbell{
+inline const scheme16 campbell{
     "campbell",
     {{inc_sRGB{12, 12, 12}, inc_sRGB{197, 15, 31}, inc_sRGB{19, 161, 14}, inc_sRGB{193, 156, 0}, inc_sRGB{0, 55, 218},
       inc_sRGB{136, 23, 152}, inc_sRGB{58, 150, 221}, inc_sRGB{204, 204, 204}, inc_sRGB{118, 118, 118},
@@ -131,7 +132,7 @@ inline constexpr scheme16 campbell{
     {255, 255, 255}};
 
 // https://github.com/dofuuz/dimidium
-inline constexpr scheme16 dimidium{
+inline const scheme16 dimidium{
     "dimidium",
     {
         // ANSI 0–15 colors (from Dimidium .itermcolors)
@@ -158,7 +159,7 @@ inline constexpr scheme16 dimidium{
     {141, 184, 229}              // selection (from .itermcolors)
 };
 
-inline constexpr scheme16 dark_plus{
+inline const scheme16 dark_plus{
     "dark_plus",
     {{inc_sRGB{0, 0, 0}, inc_sRGB{198, 47, 55}, inc_sRGB{55, 190, 120}, inc_sRGB{226, 232, 34}, inc_sRGB{57, 110, 199},
       inc_sRGB{184, 53, 188}, inc_sRGB{59, 167, 204}, inc_sRGB{229, 229, 229}, inc_sRGB{102, 102, 102},
@@ -170,7 +171,7 @@ inline constexpr scheme16 dark_plus{
     {204, 204, 204}  // selection
 };
 
-inline constexpr scheme16 vintage{
+inline const scheme16 vintage{
     "vintage",
     {{inc_sRGB{0, 0, 0}, inc_sRGB{128, 0, 0}, inc_sRGB{0, 128, 0}, inc_sRGB{128, 128, 0}, inc_sRGB{0, 0, 128},
       inc_sRGB{128, 0, 128}, inc_sRGB{0, 128, 128}, inc_sRGB{192, 192, 192}, inc_sRGB{128, 128, 128},
@@ -182,7 +183,7 @@ inline constexpr scheme16 vintage{
     {192, 192, 192}  // selection (fallback)
 };
 
-inline constexpr scheme16 ottosson{
+inline const scheme16 ottosson{
     "ottosson",
     {{inc_sRGB{0, 38, 26}, inc_sRGB{255, 0, 0}, inc_sRGB{0, 255, 0}, inc_sRGB{255, 255, 0}, inc_sRGB{0, 0, 255},
       inc_sRGB{255, 0, 255}, inc_sRGB{0, 255, 255}, inc_sRGB{255, 255, 255}, inc_sRGB{85, 85, 85},
@@ -194,7 +195,7 @@ inline constexpr scheme16 ottosson{
     {0, 85, 51}      // selection (fallback greenish)
 };
 
-inline constexpr scheme16 one_half_dark{
+inline const scheme16 one_half_dark{
     "one_half_dark",
     {{inc_sRGB{40, 44, 52}, inc_sRGB{224, 108, 117}, inc_sRGB{152, 195, 121}, inc_sRGB{229, 192, 123},
       inc_sRGB{97, 175, 239}, inc_sRGB{198, 120, 221}, inc_sRGB{86, 182, 194}, inc_sRGB{220, 223, 228},
@@ -205,7 +206,7 @@ inline constexpr scheme16 one_half_dark{
     {220, 223, 228},
     {220, 223, 228}};
 
-inline constexpr scheme16 one_half_light{
+inline const scheme16 one_half_light{
     "one_half_light",
     {{inc_sRGB{250, 250, 250}, inc_sRGB{224, 108, 117}, inc_sRGB{152, 195, 121}, inc_sRGB{184, 173, 104},
       inc_sRGB{97, 175, 239}, inc_sRGB{198, 120, 221}, inc_sRGB{86, 182, 194}, inc_sRGB{56, 58, 66},
@@ -216,7 +217,7 @@ inline constexpr scheme16 one_half_light{
     {56, 58, 66},
     {56, 58, 66}};
 
-inline constexpr scheme16 solarized_dark{
+inline const scheme16 solarized_dark{
     "solarized_dark",
     {{inc_sRGB{0, 43, 54}, inc_sRGB{220, 50, 47}, inc_sRGB{133, 153, 0}, inc_sRGB{181, 137, 0}, inc_sRGB{38, 139, 210},
       inc_sRGB{211, 54, 130}, inc_sRGB{42, 161, 152}, inc_sRGB{238, 232, 213}, inc_sRGB{88, 110, 117},
@@ -227,7 +228,7 @@ inline constexpr scheme16 solarized_dark{
     {131, 148, 150},
     {131, 148, 150}};
 
-inline constexpr scheme16 solarized_light{
+inline const scheme16 solarized_light{
     "solarized_light",
     {{inc_sRGB{253, 246, 227}, inc_sRGB{220, 50, 47}, inc_sRGB{133, 153, 0}, inc_sRGB{181, 137, 0},
       inc_sRGB{38, 139, 210}, inc_sRGB{211, 54, 130}, inc_sRGB{42, 161, 152}, inc_sRGB{7, 54, 66},
@@ -238,7 +239,7 @@ inline constexpr scheme16 solarized_light{
     {101, 123, 131},
     {101, 123, 131}};
 
-inline constexpr scheme16 tango_dark{
+inline const scheme16 tango_dark{
     "tango_dark",
     {{inc_sRGB{0, 0, 0}, inc_sRGB{204, 0, 0}, inc_sRGB{78, 154, 6}, inc_sRGB{196, 160, 0}, inc_sRGB{52, 101, 164},
       inc_sRGB{117, 80, 123}, inc_sRGB{6, 152, 154}, inc_sRGB{211, 215, 207}, inc_sRGB{85, 87, 83},
@@ -249,7 +250,7 @@ inline constexpr scheme16 tango_dark{
     {238, 238, 238},
     {238, 238, 238}};
 
-inline constexpr scheme16 tango_light{
+inline const scheme16 tango_light{
     "tango_light",
     {{inc_sRGB{0, 0, 0}, inc_sRGB{204, 0, 0}, inc_sRGB{78, 154, 6}, inc_sRGB{196, 160, 0}, inc_sRGB{52, 101, 164},
       inc_sRGB{117, 80, 123}, inc_sRGB{6, 152, 154}, inc_sRGB{211, 215, 207}, inc_sRGB{85, 87, 83},
@@ -260,7 +261,7 @@ inline constexpr scheme16 tango_light{
     {56, 58, 66},
     {56, 58, 66}};
 
-inline constexpr scheme16 cga{
+inline const scheme16 cga{
     "cga",
     {{inc_sRGB{0, 0, 0}, inc_sRGB{0, 0, 170}, inc_sRGB{0, 170, 0}, inc_sRGB{0, 170, 170}, inc_sRGB{170, 0, 0},
       inc_sRGB{170, 0, 170}, inc_sRGB{170, 85, 0}, inc_sRGB{170, 170, 170}, inc_sRGB{85, 85, 85}, inc_sRGB{85, 85, 255},
@@ -272,7 +273,7 @@ inline constexpr scheme16 cga{
     {85, 85, 85}     // selection (fallback)
 };
 
-inline constexpr scheme16 ibm_5153{
+inline const scheme16 ibm_5153{
     "ibm_5153",
     cga.palette,     // palette identical to CGA
     {170, 170, 170}, // foreground
@@ -281,7 +282,7 @@ inline constexpr scheme16 ibm_5153{
     {85, 85, 85}     // selection (fallback)
 };
 
-inline constexpr scheme16 campbell_powershell{
+inline const scheme16 campbell_powershell{
     "campbell_ps",
     {{inc_sRGB{12, 12, 12}, inc_sRGB{197, 15, 31}, inc_sRGB{19, 161, 14}, inc_sRGB{193, 156, 0}, inc_sRGB{0, 55, 218},
       inc_sRGB{136, 23, 152}, inc_sRGB{58, 150, 221}, inc_sRGB{204, 204, 204}, inc_sRGB{118, 118, 118},
@@ -295,7 +296,7 @@ inline constexpr scheme16 campbell_powershell{
 } // namespace windows_terminal
 
 namespace other_sources {
-inline constexpr scheme16 monochrome{
+inline const scheme16 monochrome{
     "monochrome",
     {
         // ANSI 0–15 colors (monochrome)
@@ -329,6 +330,6 @@ inline constexpr scheme16 monochrome{
 };
 } // namespace other_sources
 
-inline constexpr scheme16 const  &defaultScheme16  = windows_terminal::dimidium;
-inline constexpr scheme256 const &defaultScheme256 = windows_terminal::campbell256;
+inline const scheme16  &defaultScheme16  = windows_terminal::dimidium;
+inline const scheme256 &defaultScheme256 = windows_terminal::campbell256;
 } // namespace incom::standard::console::color_schemes
