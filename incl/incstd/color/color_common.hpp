@@ -6,6 +6,9 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace incom::standard::color {
 
@@ -15,6 +18,13 @@ struct inc_sRGB {
     constexpr inc_sRGB() : r(0), g(0), b(0) {}
     constexpr inc_sRGB(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) : r(r), g(g), b(b) {}
     constexpr inc_sRGB(std::array<std::uint8_t, 3> const other) : r(other[0]), g(other[1]), b(other[2]) {}
+
+    constexpr std::string to_hex() const {
+        std::ostringstream ss;
+        ss << '#' << std::hex << std::setw(2) << std::setfill('0') << int(r) << std::setw(2) << std::setfill('0')
+           << int(g) << std::setw(2) << std::setfill('0') << int(b);
+        return ss.str();
+    }
 };
 
 inline constexpr inc_sRGB const default_inc_sRGB{255, 255, 255};
