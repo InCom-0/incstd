@@ -6,7 +6,6 @@
 #include <string_view>
 #include <vector>
 
-#include "ansi_sequences.hpp"
 #include <incstd/console/colorschemes.hpp>
 
 namespace incom::standard::console {
@@ -18,18 +17,18 @@ class AnsiToHtml {
 public:
     struct Options {
         // When true, output a full HTML page <html>...; otherwise returns fragment.
-        bool                     full_page              = true;
+        bool full_page = true;
+
         // base CSS to include in <style> when full_page == true
-        std::string              base_css               = R"(
-body { background: #1e1e1e; color: #dcdcdc; font-family: monospace; padding: 1rem; white-space: pre-wrap; }
-.term-output { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Liberation Mono", monospace; }
-)";
+        std::string plotCSS =
+            R"(term-output { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Liberation Mono", monospace; })";
+
         // Whether to emit <br> for newline or leave actual newlines (pre-wrap handles display).
         bool                     convert_newlines_to_br = false;
         color_schemes::scheme256 schm                   = color_schemes::defaultScheme256;
     };
 
-    explicit AnsiToHtml() : opts_(Options{}) {}
+    explicit AnsiToHtml() {}
     explicit AnsiToHtml(Options opts) : opts_(std::move(opts)) {}
 
 
@@ -43,14 +42,14 @@ body { background: #1e1e1e; color: #dcdcdc; font-family: monospace; padding: 1re
         out.reserve(input.size() * 8);
 
         if (opts_.full_page) {
-            out += "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n";
-            out += "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n";
-            out += "<style>\n" + opts_.base_css + "\n</style>\n</head>\n<body>\n<div class=\"term-output\">\n";
+            out += "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\"/>\n"sv;
+            out += "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>\n"sv;
+            out += "<style>\n" + opts_.plotCSS + "\n</style>\n</head>\n<body>\n<pre class=\"term-output\">\n";
         }
 
         out.append(parse_and_emit(input));
 
-        if (opts_.full_page) { out += "\n</div>\n</body>\n</html>\n"; }
+        if (opts_.full_page) { out += "\n</pre>\n</body>\n</html>\n"; }
         return out;
     }
 
