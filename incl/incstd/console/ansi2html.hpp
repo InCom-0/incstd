@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <expected>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -34,7 +35,7 @@ public:
 
     // Convert ANSI-containing text to HTML string.
     std::string convert(std::string_view input) {
-        styling_.clear();
+        styling_ = _Styling_{};
         hyperlink_stack_.clear();
 
         // Reserve approx size
@@ -54,8 +55,43 @@ public:
     }
 
 private:
+    struct _Styling_ {
+        std::optional<std::string> fg;
+        std::optional<std::string> bg;
+
+        std::optional<std::string_view> opacity;
+        std::optional<std::string_view> fontWidth;
+        std::optional<std::string_view> fontStyle;
+        std::optional<std::string_view> visibility;
+
+        std::optional<std::string_view> blink;
+        std::optional<std::string_view> underline;
+        std::optional<std::string_view> strikeThrough;
+        std::optional<std::string_view> textDecorNone;
+
+
+        std::optional<std::string> build_stylingString() {
+            std::string res;
+            if (fg) { res.append(fg.value()); }
+            if (bg) { res.append(bg.value()); }
+            if (opacity) { res.append(opacity.value()); }
+            if (fontWidth) { res.append(fontWidth.value()); }
+            if (fontStyle) { res.append(fontStyle.value()); }
+            if (visibility) { res.append(visibility.value()); }
+            if (blink) { res.append(blink.value()); }
+            if (underline) { res.append(underline.value()); }
+            if (strikeThrough) { res.append(strikeThrough.value()); }
+            if (textDecorNone) { res.append(textDecorNone.value()); }
+
+            if (res.empty()) { return std::nullopt; }
+            else { return res; }
+            std::unreachable();
+        }
+    };
+
+
     Options                  opts_;
-    std::string              styling_;
+    _Styling_                styling_;
     std::vector<std::string> hyperlink_stack_; // for OSC 8 hyperlinks
 
     // Emit text chunk with current styling into out, wrapping spans and hyperlink as needed.
@@ -99,14 +135,15 @@ private:
             out += "\" target=\"_blank\" rel=\"noopener noreferrer\">";
         }
 
-        if (styling_.empty()) { out += esc; }
+
+        if (auto style = styling_.build_stylingString()) { out += esc; }
         else {
             out += "<span";
-            if (! styling_.empty()) {
-                out += " style=\"";
-                out += styling_;
-                out.push_back('\"');
-            }
+
+            out += " style=\"";
+            out += style.value();
+            out.push_back('\"');
+
             out.push_back('>');
             out += esc;
             out += "</span>";
@@ -291,13 +328,7 @@ private:
     void apply_sgr(std::vector<int> const &params) {
         if (params.empty()) {
             // reset
-            styling_.clear();
-            return;
-        }
-
-        // If first param is 0 and others exist, treat as reset then continue
-        if (params.size() == 1 && params[0] == 0) {
-            styling_.clear();
+            styling_ = _Styling_{};
             return;
         }
 
@@ -306,27 +337,29 @@ private:
             int p = params[i];
             switch (p) {
                 case 0:
-                    styling_.clear();
+                    styling_ = _Styling_{};
                     ++i;
                     break;
                 case 1:
-                    styling_.append("font-weight:bold;"sv);
+                    styling_.fontWidth = "font-weight:bold;"sv;
                     ++i;
                     break;
                 case 2:
-                    styling_.append("opacity:0.8;"sv); // visual dimming
+                    styling_.opacity = "opacity:0.8;"sv;
                     ++i;
                     break;
                 case 3:
-                    styling_.append("font-style:italic;"sv);
+                    styling_.fontStyle = "font-style:italic;"sv;
                     ++i;
                     break;
                 case 4:
-                    styling_.append("text-decoration:underline;"sv);
+                    styling_.underline     = "text-decoration:underline;"sv;
+                    styling_.textDecorNone = std::nullopt;
                     ++i;
                     break;
                 case 5:
-                    styling_.append("text-decoration:blink;"sv);
+                    styling_.blink         = "text-decoration:blink;"sv;
+                    styling_.textDecorNone = std::nullopt;
                     ++i;
                     break;
                 case 7:
@@ -334,32 +367,41 @@ private:
                     ++i;
                     break;
                 case 8:
-                    styling_.append("visibility:hidden;"sv);
+                    styling_.visibility = "visibility:hidden;"sv;
                     ++i;
                     break;
                 case 9:
-                    styling_.append("text-decoration:line-through;"sv);
+                    styling_.strikeThrough = "text-decoration:line-through;"sv;
+                    styling_.textDecorNone = std::nullopt;
                     ++i;
                     break;
                 case 21:
-                    styling_.append("font-weight:normal;"sv); // Revert intensity to normal
+                    styling_.fontWidth = "font-weight:normal;"sv;
                     ++i;
                     break;
                 case 22:
-                    styling_.append("font-weight:normal;"sv); // Revert intensity to normal
-                    styling_.append("opacity:1;"sv);          // Revert opacity to default
+                    styling_.fontWidth = "font-weight:normal;"sv;
+                    styling_.opacity   = "opacity:1;"sv;
                     ++i;
                     break;
                 case 23:
-                    styling_.append("font-style:normal;"sv); // Italic off
+                    styling_.fontStyle = "font-style:normal;"sv; // Italic off
                     ++i;
                     break;
                 case 24:
-                    styling_.append("text-decoration-line:none;"sv); // Underline and strikethrough and blink off
+                    styling_.underline     = std::nullopt;
+                    styling_.blink         = std::nullopt;
+                    styling_.strikeThrough = std::nullopt;
+                    styling_.textDecorNone =
+                        "text-decoration-line:none;"sv; // Underline and strikethrough and blink off
                     ++i;
                     break;
                 case 25:
-                    styling_.append("text-decoration-line:none;"sv); // Underline and strikethrough and blink off
+                    styling_.underline     = std::nullopt;
+                    styling_.blink         = std::nullopt;
+                    styling_.strikeThrough = std::nullopt;
+                    styling_.textDecorNone =
+                        "text-decoration-line:none;"sv; // Underline and strikethrough and blink off
                     ++i;
                     break;
                 case 27:
@@ -367,12 +409,15 @@ private:
                     ++i;
                     break;
                 case 28:
-                    styling_.append("visibility:visible;"sv);
+                    styling_.visibility = "visibility:visible;"sv;
                     ++i;
                     break;
                 case 29:
-                    styling_.append(
-                        "text-decoration-line:none;"sv); // Underline and strikethrough and blink and crossout off
+                    styling_.underline     = std::nullopt;
+                    styling_.blink         = std::nullopt;
+                    styling_.strikeThrough = std::nullopt;
+                    styling_.textDecorNone =
+                        "text-decoration-line:none;"sv; // Underline and strikethrough and blink off
                     ++i;
                     break;
 
@@ -385,13 +430,15 @@ private:
                 case 35:
                 case 36:
                 case 37:
-                    styling_.append("color:"sv);
-                    styling_.append(opts_.schm.palette[i - 30].to_hex());
-                    styling_.push_back(';');
+                    styling_.fg = std::string("color:"sv);
+                    styling_.fg->append(opts_.schm.palette[p - 30].to_hex());
+                    styling_.fg->push_back(';');
                     ++i;
                     break;
                 case 39:
-                    styling_.append("color:inherit;"sv);
+                    styling_.fg = std::string("color:"sv);
+                    styling_.fg->append(opts_.schm.foreground.to_hex());
+                    styling_.fg->push_back(';');
                     ++i;
                     break; // default fg
 
@@ -404,13 +451,15 @@ private:
                 case 45:
                 case 46:
                 case 47:
-                    styling_.append("background-color:"sv);
-                    styling_.append(opts_.schm.palette[i - 40].to_hex());
-                    styling_.push_back(';');
+                    styling_.fg = std::string("background-color:"sv);
+                    styling_.fg->append(opts_.schm.palette[p - 40].to_hex());
+                    styling_.fg->push_back(';');
                     ++i;
                     break;
                 case 49:
-                    styling_.append("background-color:inherit;"sv);
+                    styling_.bg = std::string("color:"sv);
+                    styling_.bg->append(opts_.schm.backgrond.to_hex());
+                    styling_.bg->push_back(';');
                     ++i;
                     break; // default bg
 
@@ -423,9 +472,9 @@ private:
                 case 95:
                 case 96:
                 case 97:
-                    styling_.append("color:"sv);
-                    styling_.append(opts_.schm.palette[i - 82].to_hex());
-                    styling_.push_back(';');
+                    styling_.fg = std::string("color:"sv);
+                    styling_.fg->append(opts_.schm.palette[p - 82].to_hex());
+                    styling_.fg->push_back(';');
                     ++i;
                     break;
 
@@ -438,9 +487,9 @@ private:
                 case 105:
                 case 106:
                 case 107:
-                    styling_.append("background-color:"sv);
-                    styling_.append(opts_.schm.palette[i - 92].to_hex());
-                    styling_.push_back(';');
+                    styling_.bg = std::string("background-color:"sv);
+                    styling_.bg->append(opts_.schm.palette[p - 92].to_hex());
+                    styling_.bg->push_back(';');
                     ++i;
                     break;
 
@@ -458,14 +507,14 @@ private:
                                     int idx = params[i + 2];
                                     if (idx >= 0 && idx <= 255) {
                                         if (is_fg) {
-                                            styling_.append("color:"sv);
-                                            styling_.append(opts_.schm.palette[idx].to_hex());
-                                            styling_.push_back(';');
+                                            styling_.fg = std::string("color:"sv);
+                                            styling_.fg->append(opts_.schm.palette[idx].to_hex());
+                                            styling_.fg->push_back(';');
                                         }
                                         else {
-                                            styling_.append("background-color:"sv);
-                                            styling_.append(opts_.schm.palette[idx].to_hex());
-                                            styling_.push_back(';');
+                                            styling_.bg = std::string("background-color:"sv);
+                                            styling_.bg->append(opts_.schm.palette[idx].to_hex());
+                                            styling_.bg->push_back(';');
                                         }
                                     }
                                     else {
@@ -491,14 +540,14 @@ private:
                                     auto maybe = parse_rgb_triplet(params, i + 2);
                                     if (maybe) {
                                         if (is_fg) {
-                                            styling_.append("color:"sv);
-                                            styling_.append(maybe->to_hex());
-                                            styling_.push_back(';');
+                                            styling_.fg = std::string("color:"sv);
+                                            styling_.fg->append(maybe->to_hex());
+                                            styling_.fg->push_back(';');
                                         }
                                         else {
-                                            styling_.append("background-color:"sv);
-                                            styling_.append(maybe->to_hex());
-                                            styling_.push_back(';');
+                                            styling_.bg = std::string("background-color:"sv);
+                                            styling_.bg->append(maybe->to_hex());
+                                            styling_.bg->push_back(';');
                                         }
                                     }
                                     i += 5;

@@ -19,7 +19,7 @@ struct inc_sRGB {
     constexpr inc_sRGB(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) : r(r), g(g), b(b) {}
     constexpr inc_sRGB(std::array<std::uint8_t, 3> const other) : r(other[0]), g(other[1]), b(other[2]) {}
 
-    constexpr std::string to_hex() const {
+    std::string to_hex() const {
         std::ostringstream ss;
         ss << '#' << std::hex << std::setw(2) << std::setfill('0') << int(r) << std::setw(2) << std::setfill('0')
            << int(g) << std::setw(2) << std::setfill('0') << int(b);
