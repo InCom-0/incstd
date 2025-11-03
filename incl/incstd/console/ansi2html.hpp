@@ -136,7 +136,7 @@ private:
         }
 
 
-        if (auto style = styling_.build_stylingString()) { out += esc; }
+        if (auto style = styling_.build_stylingString(); not style.has_value()) { out += esc; }
         else {
             out += "<span";
 
