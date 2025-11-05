@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.30...4.0)
 
 project(incstd)
-set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 set(XXHASH_BUILD_XXHSUM OFF)
 option(BUILD_SHARED_LIBS OFF)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_compile_options(/utf-8)
+  add_compile_definitions(NOMINMAX)
+endif()
 
 include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
