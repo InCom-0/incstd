@@ -1,6 +1,6 @@
 include(cmake/CPM.cmake)
 
-CPMAddPackage("gh:InCom-0/more_concepts#master")
+CPMAddPackage("gh:MiSo1289/more_concepts#master")
 CPMAddPackage(
     URI "gh:Cyan4973/xxHash@0.8.3"
     SOURCE_SUBDIR cmake_unofficial
