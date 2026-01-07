@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
-
 #include <iterator>
 #include <ranges>
 #include <vector>

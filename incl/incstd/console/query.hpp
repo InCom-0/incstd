@@ -8,9 +8,6 @@
 #include <string>
 #include <string_view>
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
 
 #ifdef _WIN32
 #include <windows.h>
