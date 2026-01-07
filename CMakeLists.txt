@@ -4,7 +4,8 @@ project(incstd)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 set(XXHASH_BUILD_XXHSUM OFF)
-option(BUILD_SHARED_LIBS OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_compile_options(/utf-8)
