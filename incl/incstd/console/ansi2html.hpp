@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cassert>
-#include <expected>
 #include <optional>
-#include <string>
 #include <string_view>
-#include <vector>
+#include <variant>
+
+#include <ankerl/unordered_dense.h>
+#include <incstd/core/hashing.hpp>
 
 #include <incstd/console/colorschemes.hpp>
 
@@ -20,17 +21,101 @@ public:
         // When true, output a full HTML page <html>...; otherwise returns fragment.
         bool full_page = true;
 
-        // base CSS to include in <style> when full_page == true
-        std::string plotCSS =
-            R"(term-output { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Liberation Mono", monospace; })";
+        // --- @font-face data ---
+        struct FontFaceSource {
+            struct EmbeddedWoff2 {
+                std::vector<std::byte> data;
+            };
+            struct Url {
+                std::string url;              // e.g. https://example.com/font.woff2
+                std::string format = "woff2"; // optional format hint
+            };
+            struct Local {
+                std::string name; // e.g. "Fira Code"
+            };
+            struct RawSrc {
+                std::vector<std::byte> src; // full src(...) clause, if caller already built it
+            };
+
+            std::variant<EmbeddedWoff2, Url, Local, RawSrc> value;
+
+            // helpers for concise construction
+            static FontFaceSource embedded(std::vector<std::byte> data) {
+                return FontFaceSource{EmbeddedWoff2{std::move(data)}};
+            }
+            static FontFaceSource url(std::string url, std::string format = "woff2") {
+                return FontFaceSource{Url{std::move(url), std::move(format)}};
+            }
+            static FontFaceSource local(std::string name) { return FontFaceSource{Local{std::move(name)}}; }
+            static FontFaceSource raw(std::span<const std::byte> fontBytes) {
+                return FontFaceSource{RawSrc{std::vector<std::byte>(std::from_range, fontBytes)}};
+            }
+        };
+
+        class FontFace {
+            friend class AnsiToHtml;
+
+        public:
+            std::optional<std::string> family;  // optional: auto-generated if missing/empty
+            std::optional<std::string> style;   // e.g. "normal", "italic"
+            std::optional<std::string> weight;  // e.g. "400", "bold"
+            std::optional<std::string> display; // e.g. "swap"
+            std::optional<std::string> unicode_range;
+
+            std::vector<FontFaceSource> sources; // one or more src entries
+
+        private:
+            std::string create_htmlFFElement() const {
+                std::string res("@font-face {"sv);
+
+                if (family) {
+                    res.append("font-family: "sv);
+                    res.push_back('\'');
+                    res.append(family.value());
+                    res.push_back('\'');
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+                if (style) {
+                    res.append("font-style: "sv);
+                    res.append(style.value());
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+                if (weight) {
+                    res.append("font-weight: "sv);
+                    res.append(weight.value());
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+                if (display) {
+                    res.append("font-display: "sv);
+                    res.append(display.value());
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+                if (unicode_range) {
+                    res.append("unicode-range: "sv);
+                    res.append(unicode_range.value());
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+
+                res.push_back('}');
+                res.push_back('\n');
+                return res;
+            }
+        };
+
+        std::optional<std::vector<FontFace>> font_faces;
 
         // Whether to emit <br> for newline or leave actual newlines (pre-wrap handles display).
         bool                     convert_newlines_to_br = false;
         color_schemes::scheme256 schm                   = color_schemes::defaultScheme256;
-    };
+    }; // namespace incom::standard::console
 
     explicit AnsiToHtml() {}
-    explicit AnsiToHtml(Options opts) : opts_(std::move(opts)) {}
+    explicit AnsiToHtml(Options opts) : opts_(std::move(opts)) { ff_normalize(); }
 
 
     // Convert ANSI-containing text to HTML string.
@@ -43,10 +128,54 @@ public:
         out.reserve(input.size() * 8);
 
         if (opts_.full_page) {
-            out += "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\"/>\n"sv;
-            out += "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>\n"sv;
-            out += "<style>\n" + opts_.plotCSS + "\n</style>\n</head>\n<body>\n<pre class=\"term-output\">\n";
+            out.append("<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\"/>\n"sv);
+            out.append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>\n"sv);
+
+            out.append("<style>\n"sv);
+            if (opts_.font_faces) {
+                // Append all font-faces
+                for (auto const &ff : opts_.font_faces.value()) { out.append(ff.create_htmlFFElement()); }
+            }
+            {
+                out.append(".term-output {\n"sv);
+                if (opts_.font_faces.has_value()) {
+                    out.append("font-family: "sv);
+                    if (opts_.font_faces->empty()) { out.append("monospace, "sv); }
+                    else {
+                        // If we have some fontfaces then we append them one by one
+                        for (auto const &ff : opts_.font_faces.value()) {
+                            if (ff.family.has_value()) {
+                                out.append(ff.family.value());
+                                out.push_back(',');
+                                out.push_back(' ');
+                            }
+                        }
+                    }
+                    out.pop_back();
+                    out.pop_back();
+                    out.push_back(';');
+                    out.push_back('\n');
+                }
+
+                // Block of CSS descriptors that are always the same due to necessities of terminal-like visual
+                {
+                    out.append("white-space: pre;\n"sv);
+                    out.append("font-style: normal;\n"sv);
+                    out.append("line-height: 1;\n"sv);
+                    out.append("overflow-x: auto;\n"sv);
+                    out.append("overflow-y: hidden;\n"sv);
+                    out.append("max-width: 100%;\n"sv);
+                    out.append("display: inline-block;\n"sv);
+                }
+
+                out.push_back('}');
+                out.push_back('\n');
+            }
+
+            out.append("\n</style>\n</head>\n<body>\n<pre class=\"term-output\">\n"sv);
         }
+        // TODO: Gotta handle the else case somehow
+        else {}
 
         out.append(parse_and_emit(input));
 
@@ -89,10 +218,35 @@ private:
         }
     };
 
-
+    // Private member variables
     Options                  opts_;
     _Styling_                styling_;
     std::vector<std::string> hyperlink_stack_; // for OSC 8 hyperlinks
+
+    static inline constexpr std::string_view _baseFontName = "DefaultName"sv;
+
+    // FontFace naming helpers
+    static std::string ff_create_uniqueFontName(std::string                                                     base,
+                                                ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> &used) {
+        if (base.empty()) { base = _baseFontName; }
+        std::string name = base;
+        size_t      n    = 1;
+        while (used.contains(name)) { name = base + "_" + std::to_string(n++); }
+        used.insert(name);
+        return name;
+    }
+
+    void ff_normalize() {
+        if (! opts_.font_faces.has_value()) { return; }
+
+        ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> used;
+        used.reserve(opts_.font_faces->size());
+
+        for (auto &ff : *opts_.font_faces) {
+            std::string base = (ff.family && ! ff.family->empty()) ? *ff.family : std::string{};
+            ff.family        = ff_create_uniqueFontName(std::move(base), used);
+        }
+    }
 
     // Emit text chunk with current styling into out, wrapping spans and hyperlink as needed.
     void emit_text_segment(std::string_view text, std::string &out) {
