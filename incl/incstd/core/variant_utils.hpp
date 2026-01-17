@@ -24,5 +24,10 @@ struct VariantUtility {
     };
 };
 
+template <class... Ts>
+struct Overloads : Ts... {
+    using Ts::operator()...;
+};
+
 
 } // namespace incom::standard::variant_utils

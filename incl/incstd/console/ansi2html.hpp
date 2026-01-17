@@ -50,6 +50,23 @@ public:
             static FontFaceSource raw(std::span<const std::byte> fontBytes) {
                 return FontFaceSource{RawSrc{std::vector<std::byte>(std::from_range, fontBytes)}};
             }
+
+            std::string create_srcElement() {
+                std::string res{};
+
+                auto visi = [&](auto const &val) {
+                    res.append("src: url(data:font/woff;base64,"sv);
+
+                    
+                    res.append(") format(\" woff2 \");\n"sv);
+                };
+
+
+                std::visit(visi, value);
+
+
+                return res;
+            }
         };
 
         class FontFace {
@@ -66,7 +83,7 @@ public:
 
         private:
             std::string create_htmlFFElement() const {
-                std::string res("@font-face {"sv);
+                std::string res("@font-face {\n"sv);
 
                 if (family) {
                     res.append("font-family: "sv);
@@ -131,7 +148,7 @@ public:
             out.append("<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\"/>\n"sv);
             out.append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>\n"sv);
 
-            out.append("<style>\n"sv);
+            out.append("<style type=\"text/css\">\n"sv);
             if (opts_.font_faces) {
                 // Append all font-faces
                 for (auto const &ff : opts_.font_faces.value()) { out.append(ff.create_htmlFFElement()); }
