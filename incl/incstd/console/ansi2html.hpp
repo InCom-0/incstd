@@ -26,7 +26,7 @@ public:
         // --- @font-face data ---
         struct FontFaceSource {
             struct EmbeddedWoff2 {
-                std::vector<std::byte> data;
+                std::string base64Encoded;
             };
             struct Url {
                 std::string url;              // e.g. https://example.com/font.woff2
@@ -42,8 +42,8 @@ public:
             std::variant<EmbeddedWoff2, Url, Local, RawSrc> value;
 
             // helpers for concise construction
-            static FontFaceSource embedded(std::span<const std::byte> data) {
-                return FontFaceSource{EmbeddedWoff2{std::vector<std::byte>(std::from_range, data)}};
+            static FontFaceSource embedded(std::string_view base64Encoded_woff2) {
+                return FontFaceSource{EmbeddedWoff2{std::string(base64Encoded_woff2)}};
             }
             static FontFaceSource url(std::string url, std::string format = "woff2") {
                 return FontFaceSource{Url{std::move(url), std::move(format)}};
@@ -57,7 +57,7 @@ public:
                 auto visi = variant_utils::Overloads{
                     [&](EmbeddedWoff2 const &val) {
                         res.append("url(data:font/woff;base64,"sv);
-                        for (auto c : val.data) { res.push_back(static_cast<char>(c)); }
+                        res.append(val.base64Encoded);
                         res.append(") format(\"woff2\")"sv);
                     },
                     [&](Url const &val) {
