@@ -2,11 +2,13 @@
 
 #include <cassert>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <variant>
 
 #include <ankerl/unordered_dense.h>
 #include <incstd/core/hashing.hpp>
+#include <incstd/core/variant_utils.hpp>
 
 #include <incstd/console/colorschemes.hpp>
 
@@ -34,37 +36,49 @@ public:
                 std::string name; // e.g. "Fira Code"
             };
             struct RawSrc {
-                std::vector<std::byte> src; // full src(...) clause, if caller already built it
+                std::string src; // full src(...) clause, if caller already built it
             };
 
             std::variant<EmbeddedWoff2, Url, Local, RawSrc> value;
 
             // helpers for concise construction
-            static FontFaceSource embedded(std::vector<std::byte> data) {
-                return FontFaceSource{EmbeddedWoff2{std::move(data)}};
+            static FontFaceSource embedded(std::span<const std::byte> data) {
+                return FontFaceSource{EmbeddedWoff2{std::vector<std::byte>(std::from_range, data)}};
             }
             static FontFaceSource url(std::string url, std::string format = "woff2") {
                 return FontFaceSource{Url{std::move(url), std::move(format)}};
             }
             static FontFaceSource local(std::string name) { return FontFaceSource{Local{std::move(name)}}; }
-            static FontFaceSource raw(std::span<const std::byte> fontBytes) {
-                return FontFaceSource{RawSrc{std::vector<std::byte>(std::from_range, fontBytes)}};
-            }
+            static FontFaceSource raw(std::string_view sv) { return FontFaceSource{RawSrc{std::string(sv)}}; }
 
-            std::string create_srcElement() {
+            std::string create_srcElement() const {
                 std::string res{};
 
-                auto visi = [&](auto const &val) {
-                    res.append("src: url(data:font/woff;base64,"sv);
-
-                    
-                    res.append(") format(\" woff2 \");\n"sv);
+                auto visi = variant_utils::Overloads{
+                    [&](EmbeddedWoff2 const &val) {
+                        res.append("url(data:font/woff;base64,"sv);
+                        for (auto c : val.data) { res.push_back(static_cast<char>(c)); }
+                        res.append(") format(\"woff2\")"sv);
+                    },
+                    [&](Url const &val) {
+                        res.append("url(\""sv);
+                        res.append(val.url);
+                        res.push_back('"');
+                        res.push_back(')');
+                        res.push_back(' ');
+                        res.push_back('(');
+                        res.append(val.format);
+                        res.push_back(')');
+                    },
+                    [&](Local const &val) {
+                        res.append("local("sv);
+                        res.append(val.name);
+                        res.push_back(')');
+                    },
+                    [&](RawSrc const &val) { res.append(val.src); },
                 };
 
-
                 std::visit(visi, value);
-
-
                 return res;
             }
         };
@@ -114,6 +128,19 @@ public:
                 if (unicode_range) {
                     res.append("unicode-range: "sv);
                     res.append(unicode_range.value());
+                    res.push_back(';');
+                    res.push_back('\n');
+                }
+
+                if (not sources.empty()) {
+                    res.append("src:\n"sv);
+                    for (auto const &oneSrc : sources) {
+                        res.append(oneSrc.create_srcElement());
+                        res.push_back(',');
+                        res.push_back('\n');
+                    }
+                    res.pop_back();
+                    res.pop_back();
                     res.push_back(';');
                     res.push_back('\n');
                 }
