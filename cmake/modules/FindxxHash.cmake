@@ -1,7 +1,7 @@
 find_package(PkgConfig QUIET)
 
 if(PkgConfig_FOUND)
-    pkg_check_modules(XXHASH QUIET IMPORTED_TARGET libxxhash)
+    pkg_check_modules(XXHASH IMPORTED_TARGET libxxhash)
 endif()
 
 # Fallback if the IMPORTED target wasn't created
