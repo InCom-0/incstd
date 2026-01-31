@@ -46,6 +46,23 @@ inline std::optional<std::string_view> get_file_textual(std::string_view const &
     };
 }
 
+inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view const &sv) {
+    std::ifstream ifs;
+    ifs.open(fs::path(sv));
+
+    std::optional<std::vector<std::byte>> res = std::nullopt;
+    if (ifs.is_open()) {
+        const auto size = std::filesystem::file_size(fs::path(sv));
+        res             = std::vector<std::byte>(size);
+        ifs.read(reinterpret_cast<char *>(res.value().data()), static_cast<std::streamsize>(res.value().size()));
+
+        if (! ifs) { res = std::nullopt; }
+        auto bytesRead = static_cast<std::size_t>(ifs.gcount());
+        if (bytesRead != res.value().size()) { res = std::nullopt; }
+    }
+    return res;
+}
+
 
 inline fs::path get_curExeDir() {
 #if defined(_WIN32)
