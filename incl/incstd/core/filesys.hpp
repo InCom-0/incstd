@@ -56,9 +56,9 @@ inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view con
         res             = std::vector<std::byte>(size);
         ifs.read(reinterpret_cast<char *>(res.value().data()), static_cast<std::streamsize>(res.value().size()));
 
-        if (! ifs) { res = std::nullopt; }
+        // if (! ifs) { res = std::nullopt; }
         auto bytesRead = static_cast<std::size_t>(ifs.gcount());
-        if (bytesRead != res.value().size()) { res = std::nullopt; }
+        // if (bytesRead != res.value().size()) { res = std::nullopt; }
     }
     return res;
 }
