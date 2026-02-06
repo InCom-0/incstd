@@ -156,7 +156,7 @@ public:
         // Whether to emit <br> for newline or leave actual newlines (pre-wrap handles display).
         bool                     convert_newlines_to_br = false;
         color_schemes::scheme256 schm                   = color_schemes::defaultScheme256;
-    }; // namespace incom::standard::console
+    };
 
     explicit AnsiToHtml() {}
     explicit AnsiToHtml(Options opts) : opts_(std::move(opts)) { ff_normalize(); }
@@ -164,6 +164,70 @@ public:
 
     // Convert ANSI-containing text to HTML string.
     std::string convert(std::string_view input) {
+        styling_ = _Styling_{};
+        hyperlink_stack_.clear();
+
+        // Reserve approx size
+        std::string out;
+        out.reserve(input.size() * 8);
+
+        if (opts_.full_page) {
+            out.append("<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\"/>\n"sv);
+            out.append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>\n"sv);
+
+            out.append("<style type=\"text/css\">\n"sv);
+            if (opts_.font_faces) {
+                // Append all font-faces
+                for (auto const &ff : opts_.font_faces.value()) { out.append(ff.create_htmlFFElement()); }
+            }
+            {
+                out.append(".term-output {\n"sv);
+                if (opts_.font_faces.has_value()) {
+                    out.append("font-family: "sv);
+                    if (opts_.font_faces->empty()) { out.append("monospace, "sv); }
+                    else {
+                        // If we have some fontfaces then we append them one by one
+                        for (auto const &ff : opts_.font_faces.value()) {
+                            if (ff.family.has_value()) {
+                                out.append(ff.family.value());
+                                out.push_back(',');
+                                out.push_back(' ');
+                            }
+                        }
+                    }
+                    out.pop_back();
+                    out.pop_back();
+                    out.push_back(';');
+                    out.push_back('\n');
+                }
+
+                // Block of CSS descriptors that are always the same due to necessities of terminal-like visual
+                {
+                    out.append("white-space: pre;\n"sv);
+                    out.append("font-style: normal;\n"sv);
+                    out.append("line-height: 1;\n"sv);
+                    out.append("overflow-x: auto;\n"sv);
+                    out.append("overflow-y: hidden;\n"sv);
+                    out.append("max-width: 100%;\n"sv);
+                    out.append("display: inline-block;\n"sv);
+                }
+
+                out.push_back('}');
+                out.push_back('\n');
+            }
+
+            out.append("\n</style>\n</head>\n<body>\n<pre class=\"term-output\">\n"sv);
+        }
+        // TODO: Gotta handle the else case somehow
+        else {}
+
+        out.append(parse_and_emit(input));
+
+        if (opts_.full_page) { out += "\n</pre>\n</body>\n</html>\n"; }
+        return out;
+    }
+
+    std::string convert2_canvasDrawn(std::string_view input) {
         styling_ = _Styling_{};
         hyperlink_stack_.clear();
 

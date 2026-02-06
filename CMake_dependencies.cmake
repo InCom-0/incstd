@@ -1,8 +1,13 @@
+if(NOT DEFINED CPM_USE_LOCAL_PACKAGES)
+    set(CPM_USE_LOCAL_PACKAGES ${incstd_USE_LOCAL_PACKAGES} CACHE BOOL "CPM will try to find packages locally first" FORCE)
+endif()
+if(NOT DEFINED CPM_LOCAL_PACKAGES_ONLY)
+    set(CPM_LOCAL_PACKAGES_ONLY ${incstd_USE_LOCAL_PACKAGES_ONLY} CACHE BOOL
+        "CPM will not be forbidden from downloading packages. Will have to use local packages." FORCE)
+endif()
+
 include(cmake/CPM.cmake)
 
-if(NOT CPM_USE_LOCAL_PACKAGES)
-    set(CPM_USE_LOCAL_PACKAGES ON)
-endif()
 
 CPMAddPackage("gh:MiSo1289/more_concepts#master")
 

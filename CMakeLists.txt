@@ -6,9 +6,12 @@ project(incstd
   DESCRIPTION
   "A modest extension of C++ standard library."
   LANGUAGES CXX)
-set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
+option(incstd_USE_LOCAL_PACKAGES "Use local (usually system installed) packages for dependencies." ON)
+option(incstd_USE_LOCAL_PACKAGES_ONLY "Forbid the build system from downloading missing dependencies." OFF)
 
 
 #####################################################################
