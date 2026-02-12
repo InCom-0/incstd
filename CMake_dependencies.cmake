@@ -21,10 +21,10 @@ endif()
 
 # Try again with CPM, if not found either then build from source
 CPMAddPackage(
-    URI "gh:Cyan4973/xxHash@0.8.3"
-    SOURCE_SUBDIR cmake_unofficial
+    URI "gh:Cyan4973/xxHash#dev"
+    SOURCE_SUBDIR build/cmake
     OPTIONS "BUILD_SHARED_LIBS OFF" "XXHASH_BUILD_XXHSUM OFF"
-    NAME xxHash
+    NAME xxhash
 )
 
 CPMAddPackage(
