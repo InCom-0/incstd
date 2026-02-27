@@ -210,6 +210,7 @@ public:
                     out.append("overflow-y: hidden;\n"sv);
                     out.append("max-width: 100%;\n"sv);
                     out.append("display: inline-block;\n"sv);
+                    out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
                     out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
                 }
 
@@ -275,6 +276,7 @@ public:
                     out.append("overflow-y: hidden;\n"sv);
                     out.append("max-width: 100%;\n"sv);
                     out.append("display: inline-block;\n"sv);
+                    out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
                     out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
                 }
 
