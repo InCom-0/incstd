@@ -3,8 +3,8 @@
 #include <array>
 #include <charconv>
 #include <chrono>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <expected>
 #include <regex>
 #include <string>
@@ -35,9 +35,7 @@ public:
     using result_t = std::expected<inc_sRGB, err_terminal>;
 
     // query palette index 0..255 (returns expected)
-    [[nodiscard]] static constexpr result_t get_paletteIdx(int index) {
-        return queryPaletteIndex(index);
-    }
+    [[nodiscard]] static constexpr result_t get_paletteIdx(int index) { return queryPaletteIndex(index); }
 
     // convenience: always returns something (default palette on failure)
     [[nodiscard]] static constexpr inc_sRGB get_paletteIdx_fb(int index) noexcept {
@@ -46,9 +44,7 @@ public:
     }
 
     // foreground
-    [[nodiscard]] static constexpr result_t get_foreground() {
-        return queryForeground();
-    }
+    [[nodiscard]] static constexpr result_t get_foreground() { return queryForeground(); }
 
     [[nodiscard]] static constexpr inc_sRGB get_foreground_fb() noexcept {
         auto res = queryForeground();
@@ -56,9 +52,7 @@ public:
     }
 
     // background
-    [[nodiscard]] static constexpr result_t get_background() {
-        return queryBackground();
-    }
+    [[nodiscard]] static constexpr result_t get_background() { return queryBackground(); }
 
     [[nodiscard]] static constexpr inc_sRGB get_background_fb() noexcept {
         auto res = queryBackground();
@@ -134,7 +128,7 @@ public:
         return color_schemes::defaultScheme256.palette[index];
     }
 
-public:
+private:
     // ────────────── INTERNAL ──────────────
 
     [[nodiscard]] static constexpr bool index16_valid(int idx) noexcept { return idx >= 0 && idx <= 15; }
@@ -152,8 +146,8 @@ public:
         handle_guard(handle_guard &&o) noexcept : h(o.h) { o.h = INVALID_HANDLE_VALUE; }
         handle_guard &operator=(handle_guard &&o) noexcept {
             if (h != INVALID_HANDLE_VALUE) { ::CloseHandle(h); }
-            h     = o.h;
-            o.h   = INVALID_HANDLE_VALUE;
+            h   = o.h;
+            o.h = INVALID_HANDLE_VALUE;
             return *this;
         }
         bool   valid() const noexcept { return h != INVALID_HANDLE_VALUE; }
@@ -193,7 +187,7 @@ public:
     }
 
     static constexpr std::expected<std::string, err_terminal> read_reply_from_console(HANDLE hIn,
-                                                                                      int timeoutMs = 500) noexcept {
+                                                                                      int    timeoutMs = 500) noexcept {
         if (std::is_constant_evaluated()) { return std::unexpected(err_terminal::Unsupported); }
         using clock          = std::chrono::steady_clock;
         auto        deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
@@ -231,8 +225,8 @@ public:
                                                                                 int timeoutMs = 500) noexcept {
         if (std::is_constant_evaluated()) { return std::unexpected(err_terminal::Unsupported); }
 
-        handle_guard hOut(::CreateFileA("CONOUT$", GENERIC_WRITE | GENERIC_READ,
-                                        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr));
+        handle_guard hOut(::CreateFileA("CONOUT$", GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                        nullptr, OPEN_EXISTING, 0, nullptr));
         handle_guard hIn(::CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                                        nullptr, OPEN_EXISTING, 0, nullptr));
         if (! hOut.valid() || ! hIn.valid()) { return std::unexpected(err_terminal::NoTerminal); }
@@ -257,52 +251,6 @@ public:
         }
 
         return reply;
-    }
-
-    static std::expected<inc_sRGB, err_terminal> parse_color_from_reply(std::string reply) noexcept {
-        while (! reply.empty() && (reply.back() == '\r' || reply.back() == '\n')) { reply.pop_back(); }
-
-        static std::regex rx_rgb(R"(rgb:([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4}))");
-        static std::regex rx_hash(R"(#([0-9A-Fa-f]{6}))");
-        std::smatch       m;
-        if (std::regex_search(reply, m, rx_rgb)) {
-            auto to8 = [](std::string_view s) -> std::uint8_t {
-                unsigned v = 0;
-                std::from_chars(s.data(), s.data() + s.size(), v, 16);
-                if (v > 0xFF) { v /= 257; }
-                return static_cast<std::uint8_t>(v);
-            };
-            return inc_sRGB{to8(m[1].str()), to8(m[2].str()), to8(m[3].str())};
-        }
-        if (std::regex_search(reply, m, rx_hash)) {
-            std::string hex   = m[1].str();
-            auto        from2 = [&](int off) {
-                unsigned v = 0;
-                std::from_chars(hex.data() + off, hex.data() + off + 2, v, 16);
-                return static_cast<std::uint8_t>(v);
-            };
-            return inc_sRGB{from2(0), from2(2), from2(4)};
-        }
-        return std::unexpected(err_terminal::ParseError);
-    }
-
-    static constexpr std::string make_osc_query(const std::string &body) { return "\033]" + body + '\a'; }
-
-    static constexpr result_t queryPaletteIndex(int index) noexcept {
-        if (! index256_valid(index)) { return std::unexpected(err_terminal::Unsupported); }
-        return send_osc_and_read(make_osc_query("4;" + std::to_string(index) + ";?")).and_then(parse_color_from_reply);
-    }
-
-    static constexpr result_t queryForeground() noexcept {
-        return send_osc_and_read(make_osc_query("10;?")).and_then(parse_color_from_reply);
-    }
-
-    static constexpr result_t queryBackground() noexcept {
-        return send_osc_and_read(make_osc_query("11;?")).and_then(parse_color_from_reply);
-    }
-
-    static constexpr result_t queryCursorCol() noexcept {
-        return send_osc_and_read(make_osc_query("12;?")).and_then(parse_color_from_reply);
     }
 
 #else
@@ -410,7 +358,11 @@ public:
         return read_reply_from_tty(tty.get(), timeoutMs);
     }
 
-    static constexpr std::expected<inc_sRGB, err_terminal> parse_color_from_reply(std::string reply) noexcept {
+#endif
+
+    // TODO: This is temporarily kept non-constexpr because MSVC is not up to date on constexpr implementation of some
+    // stuff this depends on (std::regex_search)
+    static std::expected<inc_sRGB, err_terminal> parse_color_from_reply(std::string reply) noexcept {
         while (! reply.empty() && (reply.back() == '\r' || reply.back() == '\n')) { reply.pop_back(); }
 
         static std::regex rx_rgb(R"(rgb:([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4}))");
@@ -455,7 +407,6 @@ public:
     static constexpr result_t queryCursorCol() noexcept {
         return send_osc_and_read(make_osc_query("12;?")).and_then(parse_color_from_reply);
     }
-#endif
 };
 
 } // namespace incom::standard::console
