@@ -207,7 +207,36 @@ private:
             char  ch   = 0;
             DWORD read = 0;
             if (isConsoleIn) {
-                if (! ::ReadConsoleA(hIn, &ch, 1, &read, nullptr)) { return std::unexpected(err_terminal::IoError); }
+                INPUT_RECORD rec{};
+                DWORD        peeked = 0;
+                if (! ::PeekConsoleInputA(hIn, &rec, 1, &peeked)) { return std::unexpected(err_terminal::IoError); }
+                if (peeked == 0) { continue; }
+
+                if (rec.EventType != KEY_EVENT) {
+                    DWORD consumed = 0;
+                    if (! ::ReadConsoleInputA(hIn, &rec, 1, &consumed)) {
+                        return std::unexpected(err_terminal::IoError);
+                    }
+                    continue;
+                }
+
+                const auto &keyEvent = rec.Event.KeyEvent;
+                if (! keyEvent.bKeyDown || keyEvent.uChar.AsciiChar == '\0') {
+                    DWORD consumed = 0;
+                    if (! ::ReadConsoleInputA(hIn, &rec, 1, &consumed)) {
+                        return std::unexpected(err_terminal::IoError);
+                    }
+                    continue;
+                }
+
+                ch = keyEvent.uChar.AsciiChar;
+                if (buf.empty() && ch != '\033') {
+                    return std::unexpected(err_terminal::Unsupported);
+                }
+
+                DWORD consumed = 0;
+                if (! ::ReadConsoleInputA(hIn, &rec, 1, &consumed)) { return std::unexpected(err_terminal::IoError); }
+                read = consumed;
             }
             else {
                 if (! ::ReadFile(hIn, &ch, 1, &read, nullptr)) { return std::unexpected(err_terminal::IoError); }
