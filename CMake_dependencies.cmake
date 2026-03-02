@@ -24,7 +24,6 @@ CPMAddPackage(
     URI "gh:Cyan4973/xxHash#dev"
     SOURCE_SUBDIR build/cmake
     OPTIONS "BUILD_SHARED_LIBS OFF" "XXHASH_BUILD_XXHSUM OFF"
-    FORCE TRUE
     NAME xxHash
 )
 

@@ -41,7 +41,13 @@ int main(int argc, char *argv[]) {
     //     static_cast<int>(item[2])
     //               << '\n';
     // }
-    std::cout << "Palette256:\n";
+
+    if (not curPalette.has_value()) {
+        std::cout << "There was an error querying the terminal\n";
+        return 1;
+    }
+
+
     for (auto &item : curPalette.value()) {
         std::cout << static_cast<int>(item.r) << ", " << static_cast<int>(item.g) << ", " << static_cast<int>(item.b)
                   << '\n';

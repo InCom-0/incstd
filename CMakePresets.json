@@ -154,11 +154,12 @@
         {
             "name": "_common",
             "hidden": true,
-            "binaryDir": "${sourceDir}/build/",
             "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-                "CPM_SOURCE_CACHE": "../.cache/CPM"
+                "CPM_SOURCE_CACHE": "${sourceDir}/.cache/CPM",
+                "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
             }
         },
         {
@@ -224,6 +225,9 @@
             "environment": {
                 "PATH": "C:/msys64/ucrt64/bin;$penv{PATH}"
             },
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "C:/msys64/ucrt64"
+            },
             "vendor": {
                 "visualStudio": {
                     "cmake.debugConfig": {
@@ -237,6 +241,9 @@
             "hidden": true,
             "environment": {
                 "PATH": "C:/msys64/clang64/bin;$penv{PATH}"
+            },
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "C:/msys64/clang64"
             },
             "vendor": {
                 "visualStudio": {
