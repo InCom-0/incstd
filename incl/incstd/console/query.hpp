@@ -376,12 +376,24 @@ private:
         return buf;
     }
 
+    static constexpr int open_query_tty_fd() noexcept {
+        int ttyFd = ::open("/dev/tty", O_RDWR | O_NOCTTY);
+        if (ttyFd >= 0) { return ttyFd; }
+        // constexpr std::array<int, 3> candidates{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
+        // for (int fd: candidates) {
+        //     if (! ::isatty(fd)) { continue; }
+        //     const char *ttyPath = ::ttyname(fd);
+        //     if (ttyPath == nullptr) { continue; }
+        //     ttyFd = ::open(ttyPath, O_RDWR | O_NOCTTY);
+        //     if (ttyFd >= 0) { return ttyFd; }
+        // }
+
+        return -1;
+    }
+
     static constexpr std::expected<std::string, err_terminal> send_osc_and_read(const std::string &osc,
                                                                                 int timeoutMs = 500) noexcept {
-        if (not isatty(STDOUT_FILENO) && not isatty(STDIN_FILENO) && not isatty(STDERR_FILENO)) {
-            return std::unexpected(err_terminal::NoTerminal);
-        }
-        uniq_fd tty(::open("/dev/tty", O_RDWR | O_NOCTTY));
+        uniq_fd tty(open_query_tty_fd());
         if (! tty.valid()) { return std::unexpected(err_terminal::NoTerminal); }
         if (! write_all(tty.get(), osc.data(), osc.size())) { return std::unexpected(err_terminal::IoError); }
         return read_reply_from_tty(tty.get(), timeoutMs);
