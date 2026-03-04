@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <optional>
-#include <ranges>
 #include <string_view>
 #include <variant>
 
@@ -276,9 +275,12 @@ public:
                     out.append("overflow-y: hidden;\n"sv);
                     out.append("max-width: 100%;\n"sv);
                     out.append("display: inline-block;\n"sv);
-                    out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
-                    out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
                 }
+
+                // Colouring that is dependent of the color scheme used
+                // TODO: There is some error with the background coloring. For some reason it is always black.
+                out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
+                out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
 
                 out.push_back('}');
                 out.push_back('\n');
