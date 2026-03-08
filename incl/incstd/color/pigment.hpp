@@ -1066,8 +1066,3 @@ inline Color detail::pigment_blend_HLPR(std::vector<double> const &factors, std:
 };
 
 } // namespace incom::standard::color
-
-#ifndef INCOM_INCCOL_NAMESPACE_ALIAS
-#define INCOM_INCCOL_NAMESPACE_ALIAS
-namespace inccol = incom::standard::color;
-#endif

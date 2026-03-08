@@ -7,3 +7,8 @@
 #define INCOM_INCSTD_NAMESPACE_ALIAS
 namespace incstd = incom::standard;
 #endif
+
+#ifndef INCOM_INCCONS_NAMESPACE_ALIAS
+#define INCOM_INCCONS_NAMESPACE_ALIAS
+namespace inccons = incom::standard::console;
+#endif

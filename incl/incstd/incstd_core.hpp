@@ -2,6 +2,7 @@
 
 #include <incstd/core/argpack.hpp>
 #include <incstd/core/buffers.hpp>
+#include <incstd/core/combinators.hpp>
 #include <incstd/core/concepts.hpp>
 #include <incstd/core/containers.hpp>
 #include <incstd/core/coroutines.hpp>
