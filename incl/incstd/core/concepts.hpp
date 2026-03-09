@@ -3,7 +3,6 @@
 #include <concepts>
 #include <expected>
 #include <optional>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -15,22 +14,19 @@ namespace incom::standard::concepts {
 using namespace incom::standard;
 
 namespace detail {
-    
+
+//  Inspired by Functional C++ - Gašper Ažman - C++Now 2024 & 30min mark
+//  https://youtu.be/bHxvfwTnJhg?t=1796
+//  Why: This is faster to compile then when using 'std::remove_cvref_t' on the inside, but it does the same thing
 template <typename T, template <typename...> typename TT>
-constexpr bool _is_specialization_of_v2 = false;
+constexpr bool _is_specialization_of = false;
 
 template <template <typename...> typename TT, typename... Ts>
-constexpr bool _is_specialization_of_v2<TT<Ts...> &, TT> = true;
+constexpr bool _is_specialization_of<TT<Ts...> &, TT> = true;
 
 template <template <typename...> typename TT, typename... Ts>
-constexpr bool _is_specialization_of_v2<TT<Ts...> const &, TT> = true;
+constexpr bool _is_specialization_of<TT<Ts...> const &, TT> = true;
 
-
-template <typename T, template <typename...> typename Template>
-struct _is_specialization_of : std::false_type {};
-
-template <template <typename...> typename Template, typename... Args>
-struct _is_specialization_of<Template<Args...>, Template> : std::true_type {};
 
 template <typename... Ts>
 struct _types_noneSame {
@@ -46,12 +42,8 @@ struct _types_noneSame {
 
 
 // Note: SpecializationOf does not support non-type template parameteres (at all) ... beware
-template <typename T, template <typename...> typename Template>
-concept is_specialization_of = detail::_is_specialization_of<T, Template>::value;
-
-// Note: SpecializationOf does not support non-type template parameteres (at all) ... beware
 template <typename T, template <typename...> typename TemplateT>
-concept is_specialization_of_v2 = detail::_is_specialization_of_v2<T&, TemplateT>;
+concept is_specialization_of = detail::_is_specialization_of<T &, TemplateT>;
 
 template <std::size_t N>
 concept is_power_of2 = ((N != 0) && ! (N & (N - 1)));

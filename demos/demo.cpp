@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <incstd/incstd_all.hpp>
+#include <incstd/core/concepts.hpp>
 
 int main(int argc, char *argv[]) {
 
@@ -63,6 +64,17 @@ int main(int argc, char *argv[]) {
                      .color_fg(curPalette->at(5))
                      .add_string("Hello World"sv)
                      .reset_all();
+
+    using namespace incom::standard::concepts;
+
+    // std::expected<size_t, std::error_code> expTest_1;
+
+    // std::cout << is_specialization_of<decltype(expTest_1), std::expected> << '\n';
+    // std::cout << is_specialization_of<std::expected<size_t, std::error_code>, std::expected> << '\n';
+    // std::cout << is_specialization_of<std::expected<size_t, std::error_code>, std::optional> << '\n';
+    // std::cout
+    //     << is_specialization_of<std::expected<volatile const size_t &, std::error_code>, std::expected> << '\n';
+
 
     return 1;
 }
