@@ -11,13 +11,24 @@
 #include <incstd/core/views.hpp>
 
 
-
 namespace incom::standard::concepts {
 using namespace incom::standard;
 
 namespace detail {
+    
+template <typename T, template <typename...> typename TT>
+constexpr bool _is_specialization_of_v2 = false;
+
+template <template <typename...> typename TT, typename... Ts>
+constexpr bool _is_specialization_of_v2<TT<Ts...> &, TT> = true;
+
+template <template <typename...> typename TT, typename... Ts>
+constexpr bool _is_specialization_of_v2<TT<Ts...> const &, TT> = true;
+
+
 template <typename T, template <typename...> typename Template>
 struct _is_specialization_of : std::false_type {};
+
 template <template <typename...> typename Template, typename... Args>
 struct _is_specialization_of<Template<Args...>, Template> : std::true_type {};
 
@@ -37,6 +48,10 @@ struct _types_noneSame {
 // Note: SpecializationOf does not support non-type template parameteres (at all) ... beware
 template <typename T, template <typename...> typename Template>
 concept is_specialization_of = detail::_is_specialization_of<T, Template>::value;
+
+// Note: SpecializationOf does not support non-type template parameteres (at all) ... beware
+template <typename T, template <typename...> typename TemplateT>
+concept is_specialization_of_v2 = detail::_is_specialization_of_v2<T&, TemplateT>;
 
 template <std::size_t N>
 concept is_power_of2 = ((N != 0) && ! (N & (N - 1)));
