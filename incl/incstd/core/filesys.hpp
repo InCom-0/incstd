@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <optional>
 
 #include <ankerl/unordered_dense.h>
@@ -50,20 +51,29 @@ inline std::optional<std::string_view> get_file_textual(std::string_view const &
 
 // TODO: At any rate change the interface so that it is using std::expected
 inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view const &sv) {
-    std::ifstream ifs;
-    ifs.open(fs::path(sv));
+    const auto path = fs::path(sv);
+    std::ifstream ifs(path, std::ios::binary | std::ios::ate);
+    if (! ifs.is_open()) { return std::nullopt; }
 
-    std::optional<std::vector<std::byte>> res = std::nullopt;
-    if (ifs.is_open()) {
-        const auto size = std::filesystem::file_size(fs::path(sv));
-        res             = std::vector<std::byte>(size);
-        ifs.read(reinterpret_cast<char *>(res.value().data()), static_cast<std::streamsize>(res.value().size()));
+    const auto endPos = ifs.tellg();
+    if (endPos < 0) { return std::nullopt; }
 
-        // if (! ifs) { res = std::nullopt; }
-        auto bytesRead = static_cast<std::size_t>(ifs.gcount());
-        // if (bytesRead != res.value().size()) { res = std::nullopt; }
+    const auto sizeAsUmax = static_cast<std::uintmax_t>(endPos);
+    if (sizeAsUmax > std::numeric_limits<std::size_t>::max()) { return std::nullopt; }
+    if (sizeAsUmax > static_cast<std::uintmax_t>(std::numeric_limits<std::streamsize>::max())) { return std::nullopt; }
+
+    const auto size = static_cast<std::size_t>(sizeAsUmax);
+    std::vector<std::byte> bytes(size);
+
+    ifs.seekg(0, std::ios::beg);
+    if (! ifs) { return std::nullopt; }
+
+    if (size != 0U) {
+        ifs.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(size));
+        if (static_cast<std::size_t>(ifs.gcount()) != size) { return std::nullopt; }
     }
-    return res;
+
+    return bytes;
 }
 
 
