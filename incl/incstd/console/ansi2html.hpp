@@ -153,8 +153,9 @@ public:
         std::optional<std::vector<FontFace>> font_faces;
 
         // Whether to emit <br> for newline or leave actual newlines (pre-wrap handles display).
-        bool                     convert_newlines_to_br = false;
-        color_schemes::scheme256 schm                   = color_schemes::defaultScheme256;
+        bool                     convert_newlines_to_br  = false;
+        color_schemes::scheme256 schm                    = color_schemes::defaultScheme256;
+        std::optional<inc_sRGB>  schm_backgroundOverride = std::nullopt;
     };
 
     explicit AnsiToHtml() {}
@@ -210,7 +211,11 @@ public:
                     out.append("max-width: 100%;\n"sv);
                     out.append("display: inline-block;\n"sv);
                     out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
-                    out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
+                    out.append(std::string("background-color: "sv)
+                                   .append(opts_.schm_backgroundOverride.has_value()
+                                               ? opts_.schm_backgroundOverride.value().to_hex()
+                                               : opts_.schm.backgrond.to_hex())
+                                   .append(";\n"));
                 }
 
                 out.push_back('}');
@@ -278,9 +283,12 @@ public:
                 }
 
                 // Colouring that is dependent of the color scheme used
-                // TODO: There is some error with the background coloring. For some reason it is always black.
                 out.append(std::string("color: "sv).append(opts_.schm.foreground.to_hex()).append(";\n"));
-                out.append(std::string("background-color: "sv).append(opts_.schm.backgrond.to_hex()).append(";\n"));
+                out.append(std::string("background-color: "sv)
+                               .append(opts_.schm_backgroundOverride.has_value()
+                                           ? opts_.schm_backgroundOverride.value().to_hex()
+                                           : opts_.schm.backgrond.to_hex())
+                               .append(";\n"));
 
                 out.push_back('}');
                 out.push_back('\n');
