@@ -365,7 +365,8 @@ inline std::expected<fs::path, std::error_code> logs_dir(std::string_view appNam
     }
     return detail::fallback_from_cwd(appName, "logs", allowFallback);
 #else
-    if (auto base = state_dir(appName, vendor, allowFallback); base) { return *base / "logs"; }
+    auto base = state_dir(appName, vendor, allowFallback);
+    if (base) { return *base / "logs"; }
     return std::unexpected(base.error());
 #endif
 }
