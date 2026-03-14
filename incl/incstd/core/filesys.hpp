@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cctype>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
@@ -147,10 +146,6 @@ inline std::expected<AccessInfo, std::filesystem::file_type> check_access(const 
 namespace locations {
 namespace detail {
 
-inline std::expected<fs::path, std::error_code> invalid_app_name() {
-    return std::unexpected(std::make_error_code(std::errc::invalid_argument));
-}
-
 inline std::expected<fs::path, std::error_code> no_location() {
     return std::unexpected(std::make_error_code(std::errc::no_such_file_or_directory));
 }
@@ -159,25 +154,7 @@ inline std::optional<fs::path> env_path(const std::string &name) {
     if (const char *raw = std::getenv(name.c_str()); raw != nullptr && *raw != '\0') { return fs::path(raw); }
     return std::nullopt;
 }
-
-inline std::string app_env_key(std::string_view appName, std::string_view suffix) {
-    std::string key;
-    key.reserve(appName.size() + suffix.size() + 1U);
-    for (const unsigned char ch : appName) {
-        if (std::isalnum(ch) != 0) { key.push_back(static_cast<char>(std::toupper(ch))); }
-        else { key.push_back('_'); }
-    }
-    key.push_back('_');
-    key.append(suffix);
-    return key;
-}
-
-inline fs::path with_vendor_and_app(fs::path base, std::string_view vendor, std::string_view appName) {
-    if (! vendor.empty()) { base /= std::string(vendor); }
-    return base / std::string(appName);
-}
-
-inline std::expected<fs::path, std::error_code> fallback_from_cwd(std::string_view appName, std::string_view category,
+inline std::expected<fs::path, std::error_code> fallback_from_cwd(std::string_view category,
                                                                   bool allowFallback) {
     if (! allowFallback) { return no_location(); }
 
@@ -185,7 +162,7 @@ inline std::expected<fs::path, std::error_code> fallback_from_cwd(std::string_vi
     const fs::path  cwd = fs::current_path(ec);
     if (ec) { return std::unexpected(ec); }
 
-    fs::path out = cwd / ("." + std::string(appName));
+    fs::path out = cwd;
     if (! category.empty()) { out /= std::string(category); }
     return out;
 }
@@ -203,242 +180,141 @@ inline std::optional<fs::path> known_folder(const KNOWNFOLDERID &id) {
 
 } // namespace detail
 
-inline std::expected<fs::path, std::error_code> roaming_user_dir(std::string_view appName, std::string_view vendor = {},
-                                                                 bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "ROAMING_DIR")); overrideP) {
-        return detail::with_vendor_and_app(overrideP.value(), vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> roaming_user_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    if (const auto base = detail::known_folder(FOLDERID_RoamingAppData); base) {
-        return detail::with_vendor_and_app(base.value(), vendor, appName);
-    }
+    if (const auto base = detail::known_folder(FOLDERID_RoamingAppData); base) { return *base; }
     if (allowFallback) {
-        if (const auto appData = detail::env_path("APPDATA"); appData) {
-            return detail::with_vendor_and_app(appData.value(), vendor, appName);
-        }
+        if (const auto appData = detail::env_path("APPDATA"); appData) { return *appData; }
     }
-#else
-    (void)vendor;
 #endif
 
-    return detail::fallback_from_cwd(appName, "roaming", allowFallback);
+    return detail::fallback_from_cwd("roaming", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> local_user_dir(std::string_view appName, std::string_view vendor = {},
-                                                               bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "LOCAL_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> local_user_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    if (const auto base = detail::known_folder(FOLDERID_LocalAppData); base) {
-        return detail::with_vendor_and_app(*base, vendor, appName);
-    }
+    if (const auto base = detail::known_folder(FOLDERID_LocalAppData); base) { return *base; }
     if (allowFallback) {
-        if (const auto appData = detail::env_path("LOCALAPPDATA"); appData) {
-            return detail::with_vendor_and_app(*appData, vendor, appName);
-        }
+        if (const auto appData = detail::env_path("LOCALAPPDATA"); appData) { return *appData; }
     }
-#else
-    (void)vendor;
 #endif
 
-    return detail::fallback_from_cwd(appName, "local", allowFallback);
+    return detail::fallback_from_cwd("local", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> config_dir(std::string_view appName, std::string_view vendor = {},
-                                                           bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "CONFIG_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> config_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    return roaming_user_dir(appName, vendor, allowFallback);
+    return roaming_user_dir(allowFallback);
 #elif defined(__APPLE__)
-    if (const auto xdg = detail::env_path("XDG_CONFIG_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) {
-        return detail::with_vendor_and_app(*home / "Library" / "Application Support", vendor, appName);
-    }
-    return detail::fallback_from_cwd(appName, "config", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_CONFIG_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / "Library" / "Application Support"; }
+    return detail::fallback_from_cwd("config", allowFallback);
 #else
-    if (const auto xdg = detail::env_path("XDG_CONFIG_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) { return *home / ".config" / std::string(appName); }
-    return detail::fallback_from_cwd(appName, "config", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_CONFIG_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / ".config"; }
+    return detail::fallback_from_cwd("config", allowFallback);
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> data_dir(std::string_view appName, std::string_view vendor = {},
-                                                         bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "DATA_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> data_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    return local_user_dir(appName, vendor, allowFallback);
+    return local_user_dir(allowFallback);
 #elif defined(__APPLE__)
-    if (const auto xdg = detail::env_path("XDG_DATA_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) {
-        return detail::with_vendor_and_app(*home / "Library" / "Application Support", vendor, appName);
-    }
-    return detail::fallback_from_cwd(appName, "data", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_DATA_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / "Library" / "Application Support"; }
+    return detail::fallback_from_cwd("data", allowFallback);
 #else
-    if (const auto xdg = detail::env_path("XDG_DATA_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) { return *home / ".local" / "share" / std::string(appName); }
-    return detail::fallback_from_cwd(appName, "data", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_DATA_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / ".local" / "share"; }
+    return detail::fallback_from_cwd("data", allowFallback);
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> state_dir(std::string_view appName, std::string_view vendor = {},
-                                                          bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "STATE_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> state_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    auto base = local_user_dir(appName, vendor, allowFallback);
+    auto base = local_user_dir(allowFallback);
     if (base) { return *base / "State"; }
     return std::unexpected(base.error());
 #elif defined(__APPLE__)
-    if (const auto xdg = detail::env_path("XDG_STATE_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) {
-        return detail::with_vendor_and_app(*home / "Library" / "Application Support", vendor, appName) / "State";
-    }
-    return detail::fallback_from_cwd(appName, "state", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_STATE_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / "Library" / "Application Support" / "State"; }
+    return detail::fallback_from_cwd("state", allowFallback);
 #else
-    if (const auto xdg = detail::env_path("XDG_STATE_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) { return *home / ".local" / "state" / std::string(appName); }
-    return detail::fallback_from_cwd(appName, "state", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_STATE_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / ".local" / "state"; }
+    return detail::fallback_from_cwd("state", allowFallback);
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> cache_dir(std::string_view appName, std::string_view vendor = {},
-                                                          bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "CACHE_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> cache_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    auto base = local_user_dir(appName, vendor, allowFallback);
+    auto base = local_user_dir(allowFallback);
     if (base) { return *base / "Cache"; }
     return std::unexpected(base.error());
 #elif defined(__APPLE__)
-    if (const auto xdg = detail::env_path("XDG_CACHE_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) {
-        return detail::with_vendor_and_app(*home / "Library" / "Caches", vendor, appName);
-    }
-    return detail::fallback_from_cwd(appName, "cache", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_CACHE_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / "Library" / "Caches"; }
+    return detail::fallback_from_cwd("cache", allowFallback);
 #else
-    if (const auto xdg = detail::env_path("XDG_CACHE_HOME"); xdg) { return *xdg / std::string(appName); }
-    if (const auto home = detail::env_path("HOME"); home) { return *home / ".cache" / std::string(appName); }
-    return detail::fallback_from_cwd(appName, "cache", allowFallback);
+    if (const auto xdg = detail::env_path("XDG_CACHE_HOME"); xdg) { return *xdg; }
+    if (const auto home = detail::env_path("HOME"); home) { return *home / ".cache"; }
+    return detail::fallback_from_cwd("cache", allowFallback);
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> logs_dir(std::string_view appName, std::string_view vendor = {},
-                                                         bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "LOG_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> logs_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    auto base = local_user_dir(appName, vendor, allowFallback);
+    auto base = local_user_dir(allowFallback);
     if (base) { return *base / "Logs"; }
     return std::unexpected(base.error());
 #elif defined(__APPLE__)
-    if (const auto home = detail::env_path("HOME"); home) {
-        return detail::with_vendor_and_app(*home / "Library" / "Logs", vendor, appName);
-    }
-    return detail::fallback_from_cwd(appName, "logs", allowFallback);
+    if (const auto home = detail::env_path("HOME"); home) { return *home / "Library" / "Logs"; }
+    return detail::fallback_from_cwd("logs", allowFallback);
 #else
-    auto base = state_dir(appName, vendor, allowFallback);
+    auto base = state_dir(allowFallback);
     if (base) { return *base / "logs"; }
     return std::unexpected(base.error());
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> runtime_dir(std::string_view appName, std::string_view vendor = {},
-                                                            bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "RUNTIME_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> runtime_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    auto base = local_user_dir(appName, vendor, allowFallback);
+    auto base = local_user_dir(allowFallback);
     if (base) { return *base / "Runtime"; }
     return std::unexpected(base.error());
 #elif defined(__linux__)
-    if (const auto xdg = detail::env_path("XDG_RUNTIME_DIR"); xdg) { return *xdg / std::string(appName); }
+    if (const auto xdg = detail::env_path("XDG_RUNTIME_DIR"); xdg) { return *xdg; }
     if (! allowFallback) { return detail::no_location(); }
 #endif
 
     std::error_code ec;
     const fs::path  tmpRoot = fs::temp_directory_path(ec);
-    if (! ec) {
-        fs::path out = detail::with_vendor_and_app(tmpRoot, vendor, appName);
-        return out / "runtime";
-    }
+    if (! ec) { return tmpRoot / "runtime"; }
 
-    return detail::fallback_from_cwd(appName, "runtime", allowFallback);
+    return detail::fallback_from_cwd("runtime", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> temp_dir(std::string_view appName, std::string_view vendor = {},
-                                                         bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "TEMP_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> temp_dir(bool allowFallback = true) {
     std::error_code ec;
     const fs::path  tmpRoot = fs::temp_directory_path(ec);
-    if (! ec) { return detail::with_vendor_and_app(tmpRoot, vendor, appName); }
+    if (! ec) { return tmpRoot; }
 
-    return detail::fallback_from_cwd(appName, "temp", allowFallback);
+    return detail::fallback_from_cwd("temp", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> machine_data_dir(std::string_view appName, std::string_view vendor = {},
-                                                                 bool allowFallback = true) {
-    if (appName.empty()) { return detail::invalid_app_name(); }
-
-    if (const auto overrideP = detail::env_path(detail::app_env_key(appName, "PROGRAM_DATA_DIR")); overrideP) {
-        return detail::with_vendor_and_app(*overrideP, vendor, appName);
-    }
-
+inline std::expected<fs::path, std::error_code> machine_data_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    if (const auto base = detail::known_folder(FOLDERID_ProgramData); base) {
-        return detail::with_vendor_and_app(*base, vendor, appName);
-    }
+    if (const auto base = detail::known_folder(FOLDERID_ProgramData); base) { return *base; }
     if (allowFallback) {
-        if (const auto envProgramData = detail::env_path("PROGRAMDATA"); envProgramData) {
-            return detail::with_vendor_and_app(*envProgramData, vendor, appName);
-        }
+        if (const auto envProgramData = detail::env_path("PROGRAMDATA"); envProgramData) { return *envProgramData; }
     }
 #elif defined(__APPLE__)
-    return detail::with_vendor_and_app(fs::path("/Library") / "Application Support", vendor, appName);
+    return fs::path("/Library") / "Application Support";
 #elif defined(__linux__)
-    return detail::with_vendor_and_app(fs::path("/var") / "lib", vendor, appName);
-#else
-    (void)vendor;
+    return fs::path("/var") / "lib";
 #endif
 
-    return detail::fallback_from_cwd(appName, "program-data", allowFallback);
+    return detail::fallback_from_cwd("program-data", allowFallback);
 }
 } // namespace locations
 
