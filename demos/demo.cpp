@@ -1,7 +1,8 @@
 #include <iostream>
 
-#include <incstd/incstd_all.hpp>
 #include <incstd/core/concepts.hpp>
+#include <incstd/incstd_all.hpp>
+
 
 int main(int argc, char *argv[]) {
 
@@ -32,6 +33,13 @@ int main(int argc, char *argv[]) {
     //     }
     //     else { std::cerr << "Palette query failed: " << to_string(idx.error()) << "\n"; }
     // }
+
+    auto ttt  = incom::standard::filesys::locations::cache_dir(true);
+    auto ttt2 = incom::standard::filesys::locations::cache_dir("incplot",true);
+
+    if (ttt) { std::cout << ttt->generic_string() << '\n'; }
+
+    if (ttt2) { std::cout << ttt2->generic_string() << '\n'; }
 
 
     auto curPalette = ColorQuery::get_palette256();
