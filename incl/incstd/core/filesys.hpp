@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <new>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -13,6 +14,10 @@
 
 #include <ankerl/unordered_dense.h>
 #include <incstd/core/hashing.hpp>
+
+#if ! defined(_WIN32)
+#include <cerrno>
+#endif
 
 #if defined(__MINGW64__)
 #include <shlobj.h>
@@ -83,22 +88,55 @@ inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view con
 }
 
 
-inline fs::path get_curExeDir() {
+inline std::expected<fs::path, std::error_code> get_curExeDir() {
+    try {
 #if defined(_WIN32)
-    wchar_t buffer[MAX_PATH];
-    GetModuleFileNameW(NULL, buffer, MAX_PATH);
-    return fs::path(buffer).parent_path();
+        wchar_t buffer[MAX_PATH];
+        const DWORD len = GetModuleFileNameW(nullptr, buffer, MAX_PATH);
+        if (len == 0) {
+            const DWORD winErr = GetLastError();
+            return std::unexpected(
+                std::error_code(static_cast<int>(winErr != 0 ? winErr : ERROR_GEN_FAILURE), std::system_category()));
+        }
+
+        std::error_code ec;
+        const fs::path  exeDir = fs::path(buffer).parent_path();
+        const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
+        if (ec) { return std::unexpected(ec); }
+        return canonicalExeDir;
 #elif defined(__APPLE__)
-    char     buffer[1024];
-    uint32_t size = sizeof(buffer);
-    if (_NSGetExecutablePath(buffer, &size) == 0) { return fs::path(buffer).parent_path(); }
-    else { throw std::runtime_error("Executable path too long"); }
+        char     buffer[1024];
+        uint32_t size = sizeof(buffer);
+        if (_NSGetExecutablePath(buffer, &size) != 0) {
+            return std::unexpected(std::make_error_code(std::errc::file_name_too_long));
+        }
+
+        std::error_code ec;
+        const fs::path  exeDir = fs::path(buffer).parent_path();
+        const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
+        if (ec) { return std::unexpected(ec); }
+        return canonicalExeDir;
 #else
-    char    buffer[1024];
-    ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer));
-    if (count == -1) { throw std::runtime_error("Unable to resolve /proc/self/exe"); }
-    return fs::path(std::string(buffer, count)).parent_path();
+        char    buffer[1024];
+        ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer));
+        if (count == -1) { return std::unexpected(std::error_code(errno, std::generic_category())); }
+
+        std::error_code ec;
+        const fs::path  exeDir = fs::path(std::string(buffer, static_cast<std::size_t>(count))).parent_path();
+        const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
+        if (ec) { return std::unexpected(ec); }
+        return canonicalExeDir;
 #endif
+    }
+    catch (const fs::filesystem_error &e) {
+        return std::unexpected(e.code());
+    }
+    catch (const std::bad_alloc &) {
+        return std::unexpected(std::make_error_code(std::errc::not_enough_memory));
+    }
+    catch (...) {
+        return std::unexpected(std::make_error_code(std::errc::io_error));
+    }
 }
 
 struct AccessInfo {
@@ -380,11 +418,19 @@ inline std::expected<fs::path, std::error_code> machine_data_dir(std::string_vie
 // 2) appName_CONFIG_DIR env variable directory
 // 3) Default directory expected for a particular system (Linux, MacOS, Windows)
 inline std::expected<fs::path, std::error_code> find_configFile(const std::string &appName, const std::string &file) {
-    fs::path pthToTry = get_curExeDir() / file;
-    if (fs::exists(pthToTry)) { return pthToTry; }
+    auto exeDir = get_curExeDir();
+    if (! exeDir) { return std::unexpected(exeDir.error()); }
+
+    std::error_code ec;
+    fs::path         pthToTry = *exeDir / file;
+    if (fs::exists(pthToTry, ec)) { return pthToTry; }
+    if (ec) { return std::unexpected(ec); }
+
     else if (const char *env = std::getenv((appName + "_CONFIG_DIR").c_str())) {
         pthToTry = fs::path(env) / file;
-        if (fs::exists(pthToTry)) { return pthToTry; }
+        ec.clear();
+        if (fs::exists(pthToTry, ec)) { return pthToTry; }
+        if (ec) { return std::unexpected(ec); }
     }
 
     else {
@@ -392,23 +438,31 @@ inline std::expected<fs::path, std::error_code> find_configFile(const std::strin
         // 2. Windows AppData
         if (char *appData = std::getenv("APPDATA")) {
             pthToTry = fs::path(appData) / appName / file;
-            if (fs::exists(pthToTry)) { return pthToTry; }
+            ec.clear();
+            if (fs::exists(pthToTry, ec)) { return pthToTry; }
+            if (ec) { return std::unexpected(ec); }
         }
 #elif defined(__APPLE__)
         // 2. macOS Application Support
         if (const char *home = std::getenv("HOME")) {
             pthToTry = fs::path(home) / "Library" / "Application Support" / appName / file;
-            if (fs::exists(pthToTry)) { return pthToTry; }
+            ec.clear();
+            if (fs::exists(pthToTry, ec)) { return pthToTry; }
+            if (ec) { return std::unexpected(ec); }
         }
 #else
         // 2. Linux/Unix: XDG or ~/.config
         if (const char *xdg = std::getenv("XDG_CONFIG_HOME")) {
             pthToTry = fs::path(xdg) / appName / file;
-            if (fs::exists(pthToTry)) { return pthToTry; }
+            ec.clear();
+            if (fs::exists(pthToTry, ec)) { return pthToTry; }
+            if (ec) { return std::unexpected(ec); }
         }
         if (const char *home = std::getenv("HOME")) {
             pthToTry = fs::path(home) / ".config" / appName / file;
-            if (fs::exists(pthToTry)) { return pthToTry; }
+            ec.clear();
+            if (fs::exists(pthToTry, ec)) { return pthToTry; }
+            if (ec) { return std::unexpected(ec); }
         }
 #endif
     }
