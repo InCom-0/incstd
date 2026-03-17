@@ -108,7 +108,7 @@ inline std::expected<fs::path, std::error_code> get_curExeDir() {
         char     buffer[1024];
         uint32_t size = sizeof(buffer);
         if (_NSGetExecutablePath(buffer, &size) != 0) {
-            return std::unexpected(std::make_error_code(std::errc::file_name_too_long));
+            return std::unexpected(std::make_error_code(std::errc::filename_too_long));
         }
 
         std::error_code ec;
