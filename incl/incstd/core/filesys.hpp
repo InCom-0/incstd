@@ -91,7 +91,7 @@ inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view con
 inline std::expected<fs::path, std::error_code> get_curExeDir() {
     try {
 #if defined(_WIN32)
-        wchar_t buffer[MAX_PATH];
+        wchar_t     buffer[MAX_PATH];
         const DWORD len = GetModuleFileNameW(nullptr, buffer, MAX_PATH);
         if (len == 0) {
             const DWORD winErr = GetLastError();
@@ -100,7 +100,7 @@ inline std::expected<fs::path, std::error_code> get_curExeDir() {
         }
 
         std::error_code ec;
-        const fs::path  exeDir = fs::path(buffer).parent_path();
+        const fs::path  exeDir          = fs::path(buffer).parent_path();
         const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
         if (ec) { return std::unexpected(ec); }
         return canonicalExeDir;
@@ -112,7 +112,7 @@ inline std::expected<fs::path, std::error_code> get_curExeDir() {
         }
 
         std::error_code ec;
-        const fs::path  exeDir = fs::path(buffer).parent_path();
+        const fs::path  exeDir          = fs::path(buffer).parent_path();
         const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
         if (ec) { return std::unexpected(ec); }
         return canonicalExeDir;
@@ -122,7 +122,7 @@ inline std::expected<fs::path, std::error_code> get_curExeDir() {
         if (count == -1) { return std::unexpected(std::error_code(errno, std::generic_category())); }
 
         std::error_code ec;
-        const fs::path  exeDir = fs::path(std::string(buffer, static_cast<std::size_t>(count))).parent_path();
+        const fs::path  exeDir          = fs::path(std::string(buffer, static_cast<std::size_t>(count))).parent_path();
         const fs::path  canonicalExeDir = fs::canonical(exeDir, ec);
         if (ec) { return std::unexpected(ec); }
         return canonicalExeDir;
@@ -257,10 +257,8 @@ inline std::expected<fs::path, std::error_code> roaming_user_dir(std::string_vie
 
 inline std::expected<fs::path, std::error_code> local_user_dir(bool allowFallback = true) {
 #if defined(_WIN32)
-    // if (const auto base = detail::known_folder(FOLDERID_LocalAppData); base) { return *base; }
-    if (allowFallback) {
-        if (const auto appData = detail::env_path("LOCALAPPDATA"); appData) { return *appData; }
-    }
+    if (const auto base = detail::known_folder(FOLDERID_LocalAppData); base) { return base.value(); }
+    else if (const auto appData = detail::env_path("LOCALAPPDATA"); appData) { return appData.value(); }
 #endif
 
     return detail::fallback_from_cwd("local", allowFallback);
@@ -422,7 +420,7 @@ inline std::expected<fs::path, std::error_code> find_configFile(const std::strin
     if (! exeDir) { return std::unexpected(exeDir.error()); }
 
     std::error_code ec;
-    fs::path         pthToTry = *exeDir / file;
+    fs::path        pthToTry = *exeDir / file;
     if (fs::exists(pthToTry, ec)) { return pthToTry; }
     if (ec) { return std::unexpected(ec); }
 
