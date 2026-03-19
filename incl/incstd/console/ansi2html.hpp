@@ -159,7 +159,10 @@ public:
     };
 
     explicit AnsiToHtml() {}
-    explicit AnsiToHtml(Options opts) : opts_(std::move(opts)) { ff_normalize(); }
+    explicit AnsiToHtml(Options opts, std::string const &defaultBaseFontName)
+        : opts_(std::move(opts)), _baseFontName(defaultBaseFontName) {
+        ff_normalize();
+    }
 
 
     // Convert ANSI-containing text to HTML string.
@@ -345,11 +348,11 @@ private:
     _Styling_                styling_;
     std::vector<std::string> hyperlink_stack_; // for OSC 8 hyperlinks
 
-    static inline constexpr std::string_view _baseFontName = "DefaultName"sv;
+    const std::string _baseFontName = "DefaultName";
 
     // FontFace naming helpers
-    static std::string ff_create_uniqueFontName(std::string                                                     base,
-                                                ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> &used) {
+    std::string ff_create_uniqueFontName(std::string                                                     base,
+                                         ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> &used) {
         if (base.empty()) { base = _baseFontName; }
         std::string name = base;
         size_t      n    = 1;
