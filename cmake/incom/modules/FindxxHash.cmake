@@ -80,7 +80,7 @@ if(XXHASH_PC_FOUND)
         HINTS ${XXHASH_PC_INCLUDEDIR} ${XXHASH_PC_INCLUDE_DIRS}
     )
     find_library(XXHASH_LIBRARY
-        NAMES ${XXHASH_NAMES} libxxhash
+        NAMES ${XXHASH_NAMES} xxhash
         HINTS ${XXHASH_PC_LIBDIR} ${XXHASH_PC_LIBRARY_DIRS}
     )
 

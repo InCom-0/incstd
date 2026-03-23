@@ -44,7 +44,7 @@ target_compile_features(incstd INTERFACE cxx_std_23)
 ##########################################################################
 include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
-target_link_libraries(incstd INTERFACE more_concepts::more_concepts xxhash unordered_dense::unordered_dense)
+target_link_libraries(incstd INTERFACE more_concepts::more_concepts xxHash::xxhash unordered_dense::unordered_dense)
 
 
 ##########################################################################
