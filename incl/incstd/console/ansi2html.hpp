@@ -225,7 +225,14 @@ public:
                 out.push_back('\n');
             }
 
-            out.append("\n</style>\n</head>\n<body>\n<pre class=\"term-output\">\n"sv);
+            out.append("\n</style>\n</head>\n<body "sv);
+            out.append("margin: 0; "sv);
+            out.append(std::string("style=\"background-color: "sv)
+                           .append(opts_.schm_backgroundOverride.has_value()
+                                       ? opts_.schm_backgroundOverride.value().to_hex()
+                                       : opts_.schm.backgrond.to_hex())
+                           .append("\""));
+            out.append(">\n<pre class=\"term-output\">\n"sv);
         }
         // TODO: Gotta handle the else case somehow
         else {}
