@@ -1,4 +1,4 @@
-include(cmake/lefticus/CPM.cmake)
+include(cmake/CPM_0.42.1.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/incom/modules")
 
 
