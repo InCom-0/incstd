@@ -2,20 +2,23 @@
 
 #include <array>
 #include <cstdint>
-#include <string>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
+#include <string>
+
 
 namespace incom::standard::color {
 
 struct inc_sRGB {
-    std::uint8_t   r, g, b;
-    constexpr bool operator==(const inc_sRGB &) const = default;
+    std::uint8_t r, g, b;
+    constexpr bool
+    operator==(const inc_sRGB &) const = default;
     constexpr inc_sRGB() : r(0), g(0), b(0) {}
     constexpr inc_sRGB(std::uint8_t const r, std::uint8_t const g, std::uint8_t const b) : r(r), g(g), b(b) {}
     constexpr inc_sRGB(std::array<std::uint8_t, 3> const other) : r(other[0]), g(other[1]), b(other[2]) {}
 
-    std::string to_hex() const {
+    std::string
+    to_hex() const {
         std::ostringstream ss;
         ss << '#' << std::hex << std::setw(2) << std::setfill('0') << int(r) << std::setw(2) << std::setfill('0')
            << int(g) << std::setw(2) << std::setfill('0') << int(b);
@@ -26,8 +29,9 @@ struct inc_sRGB {
 inline constexpr inc_sRGB const default_inc_sRGB{255, 255, 255};
 
 struct inc_lRGB {
-    double         r, g, b;
-    constexpr bool operator==(const inc_lRGB &) const = default;
+    double r, g, b;
+    constexpr bool
+    operator==(const inc_lRGB &) const = default;
 
     constexpr inc_lRGB() : r(0.0), g(0.0), b(0.0) {}
     constexpr inc_lRGB(double const r, double const g, double const b) : r(r), g(g), b(b) {}
@@ -59,10 +63,12 @@ enum class ANSI_Color16 {
     Bright_White,
 };
 
-inline constexpr inc_sRGB get_fromPalette(palette16 const &palette, ANSI_Color16 toGet) {
+inline constexpr inc_sRGB
+get_fromPalette(palette16 const &palette, ANSI_Color16 toGet) {
     return palette[static_cast<int>(toGet)];
 }
-inline constexpr inc_sRGB get_fromPalette(palette256 const &palette, ANSI_Color16 toGet) {
+inline constexpr inc_sRGB
+get_fromPalette(palette256 const &palette, ANSI_Color16 toGet) {
     return palette[static_cast<int>(toGet)];
 }
 

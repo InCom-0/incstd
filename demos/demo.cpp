@@ -4,7 +4,8 @@
 #include <incstd/incstd_all.hpp>
 
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[]) {
 
 
     using namespace incom::standard::console;
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
     // }
 
     auto ttt  = incom::standard::filesys::locations::cache_dir(true);
-    auto ttt2 = incom::standard::filesys::locations::cache_dir("incplot",true);
+    auto ttt2 = incom::standard::filesys::locations::cache_dir("incplot", true);
 
     if (ttt) { std::cout << ttt->generic_string() << '\n'; }
 

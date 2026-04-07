@@ -47,7 +47,8 @@ namespace detail {
 // https://stackoverflow.com/questions/72706224/how-do-i-reverse-the-order-of-the-integers-in-a-stdinteger-sequenceint-4
 
 template <auto View, typename INT, INT... Is>
-auto build_sequence(std::integer_sequence<INT, Is...>) {
+auto
+build_sequence(std::integer_sequence<INT, Is...>) {
     // We build an array holding the input sequence of integers
     constexpr std::array<INT, sizeof...(Is)> input{Is...};
 
@@ -77,11 +78,13 @@ using transform_integer_sequence = decltype(detail::build_sequence<view>(Sequenc
 
 
 template <typename T>
-constexpr auto get_typeIndex() {
+constexpr auto
+get_typeIndex() {
     return std::type_index(typeid(T));
 }
 template <typename T>
-constexpr auto get_typeIndex(T) {
+constexpr auto
+get_typeIndex(T) {
     return std::type_index(typeid(T));
 }
 

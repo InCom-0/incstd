@@ -13,7 +13,8 @@
 
 namespace incom::standard::algos {
 
-constexpr inline std::tuple<double, double> compute_minMaxMulti(auto &&anything) {
+constexpr inline std::tuple<double, double>
+compute_minMaxMulti(auto &&anything) {
     std::pair<double, double> res{std::numeric_limits<double>::max(), std::numeric_limits<double>::min()};
 
     auto ol_set_solver = [&](this auto const &self, auto const &any) -> void {
@@ -56,7 +57,8 @@ constexpr inline std::tuple<double, double> compute_minMaxMulti(auto &&anything)
 }
 
 template <bool silentSkip = true>
-auto compute_deep_applyAndFold(auto const &&onto, auto const &&applier_func, auto const &&fold_func, auto init) {
+auto
+compute_deep_applyAndFold(auto const &&onto, auto const &&applier_func, auto const &&fold_func, auto init) {
     using applier_func_t = std::remove_cv_t<decltype(applier_func)>;
     using fold_func_t    = std::remove_cv_t<decltype(fold_func)>;
     using init_t         = std::remove_cv_t<decltype(init)>;
@@ -97,12 +99,13 @@ auto compute_deep_applyAndFold(auto const &&onto, auto const &&applier_func, aut
     return init;
 }
 
-// Not actual sorting, just give the user sorted indices into original ranges. 
+// Not actual sorting, just give the user sorted indices into original ranges.
 // func_sorterComp operates on tuples of <const & RNGs...> (through projection) but physically sorts tuples of
 // <size_t,std::reference_wrapper()...> Outputs sorted indices into the original rngs
 template <typename... RNGs>
 requires(sizeof...(RNGs) > 0) && (std::ranges::range<RNGs>, ...)
-std::vector<size_t> compute_sortedIDXs(auto func_sorterComp, RNGs const &...rngs) {
+std::vector<size_t>
+compute_sortedIDXs(auto func_sorterComp, RNGs const &...rngs) {
     auto lam_IS = [&]<size_t... idxs>(std::index_sequence<idxs...>) -> std::vector<size_t> {
         auto filteredVec = std::views::zip(std::views::iota(0uz), rngs...) | std::views::transform([](auto const &tpl) {
                                return std::tuple(std::get<0>(tpl), std::ref(std::get<idxs + 1>(tpl))...);
@@ -119,13 +122,14 @@ std::vector<size_t> compute_sortedIDXs(auto func_sorterComp, RNGs const &...rngs
     return lam_IS(std::make_index_sequence<sizeof...(RNGs)>{});
 }
 
-// Not actual sorting, just give the user sorted indices into original ranges. 
+// Not actual sorting, just give the user sorted indices into original ranges.
 // func_filter operates on tuples of <size_t, RNGs...>. Means the first element is automatically added to be the index.
 // func_sorterComp operates on tuples of <const & RNGs...> (through projection) but physically sorts tuples of <size_t,
 // std::reference_wrapper()...> Outputs sorted indices into the original rngs
 template <typename... RNGs>
 requires(sizeof...(RNGs) > 0) && (std::ranges::range<RNGs>, ...)
-std::vector<size_t> compute_filterSortedIDXs(auto func_filter, auto func_sorterComp, RNGs const &...rngs) {
+std::vector<size_t>
+compute_filterSortedIDXs(auto func_filter, auto func_sorterComp, RNGs const &...rngs) {
     auto lam_IS = [&]<size_t... idxs>(std::index_sequence<idxs...>) -> std::vector<size_t> {
         auto filteredVec = std::views::zip(std::views::iota(0uz), rngs...) | std::views::filter(func_filter) |
                            std::views::transform([](auto const &tpl) {

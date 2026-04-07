@@ -26,7 +26,8 @@ enum class err_terminal {
     Unsupported
 };
 
-[[nodiscard]] inline constexpr std::string_view to_string(err_terminal e) noexcept {
+[[nodiscard]] inline constexpr std::string_view
+to_string(err_terminal e) noexcept {
     using namespace std::literals;
     switch (e) {
         case err_terminal::NoTerminal:  return "NoTerminal"sv;
@@ -39,7 +40,8 @@ enum class err_terminal {
 }
 
 
-inline std::pair<int, int> get_rowColCount() {
+inline std::pair<int, int>
+get_rowColCount() {
 #if defined(_WIN64)
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
@@ -57,13 +59,15 @@ inline std::pair<int, int> get_rowColCount() {
 #endif
 }
 
-inline bool is_inTerminal() {
+inline bool
+is_inTerminal() {
     auto sizePair = get_rowColCount();
     if (sizePair.first < 1 || sizePair.second < 1) { return false; }
     else { return true; }
 }
 
-inline bool is_stdin_inTerminal() {
+inline bool
+is_stdin_inTerminal() {
 #if defined(__linux__) || defined(__MINGW64__) || (defined(__APPLE__) && defined(__MACH__))
     return isatty(fileno(stdin));
 #elif defined(_WIN64)
@@ -71,7 +75,8 @@ inline bool is_stdin_inTerminal() {
 #endif
 };
 
-inline bool is_stdout_inTerminal() {
+inline bool
+is_stdout_inTerminal() {
 #if defined(__linux__) || defined(__MINGW64__) || (defined(__APPLE__) && defined(__MACH__))
     return isatty(fileno(stdout));
 #elif defined(_WIN64)
@@ -79,7 +84,8 @@ inline bool is_stdout_inTerminal() {
 #endif
 };
 
-inline void set_cocp() {
+inline void
+set_cocp() {
 #if defined(_WIN64)
     SetConsoleOutputCP(CP_UTF8);
 #elif defined(__linux__) || (defined(__APPLE__) && defined(__MACH__))

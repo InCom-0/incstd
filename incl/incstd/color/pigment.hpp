@@ -236,7 +236,8 @@ concept _is_matrixArray_and_range = _is_matrix_and_range<M, V> && is_std_array_v
 // COMPUTATIONAL HELPER FUNCTIONS
 template <typename M, typename V>
 requires _is_matrixArray_and_range<M, V> && is_std_array_v<V>
-inline constexpr auto mulMatVec(M const &matrix, V const &vec) -> std::array<double, std::tuple_size<M>{}> {
+inline constexpr auto
+mulMatVec(M const &matrix, V const &vec) -> std::array<double, std::tuple_size<M>{}> {
     std::array<double, std::tuple_size<M>{}> res;
     for (std::size_t i = 0; i < std::tuple_size<M>{}; ++i) {
         res[i] = 0.0;
@@ -247,7 +248,8 @@ inline constexpr auto mulMatVec(M const &matrix, V const &vec) -> std::array<dou
 
 template <typename M, typename V>
 requires _is_matrixArray_and_range<M, V>
-inline constexpr auto mulMatVec(M const &matrix, V const &vec) -> std::array<double, std::tuple_size<M>{}> {
+inline constexpr auto
+mulMatVec(M const &matrix, V const &vec) -> std::array<double, std::tuple_size<M>{}> {
     std::size_t const                        cols = vec.size();
     std::array<double, std::tuple_size<M>{}> res;
     for (std::size_t i = 0; i < std::tuple_size<M>{}; ++i) {
@@ -259,7 +261,8 @@ inline constexpr auto mulMatVec(M const &matrix, V const &vec) -> std::array<dou
 
 template <typename M, typename V>
 requires _is_matrix_and_range<M, V>
-inline constexpr auto mulMatVec(M const &matrix, V const &vec) {
+inline constexpr auto
+mulMatVec(M const &matrix, V const &vec) {
     std::size_t const   rows = matrix.size();
     std::size_t const   cols = vec.size();
     std::vector<double> res(rows, 0.0);
@@ -269,7 +272,8 @@ inline constexpr auto mulMatVec(M const &matrix, V const &vec) {
     return res;
 }
 
-inline constexpr auto mulMatVec(std::array<inc_lRGB, 3> const &matrix, inc_lRGB const &vec) {
+inline constexpr auto
+mulMatVec(std::array<inc_lRGB, 3> const &matrix, inc_lRGB const &vec) {
     inc_lRGB res{0, 0, 0};
     res.r += matrix[0].r * vec.r;
     res.r += matrix[0].g * vec.g;
@@ -283,15 +287,18 @@ inline constexpr auto mulMatVec(std::array<inc_lRGB, 3> const &matrix, inc_lRGB 
     return res;
 }
 
-inline constexpr double uncompand(double x) {
+inline constexpr double
+uncompand(double x) {
     return x > 0.04045 ? std::pow((x + 0.055) / 1.055, detail::GAMMA) : x / 12.92;
 }
 
-inline constexpr double compand(double x) {
+inline constexpr double
+compand(double x) {
     return x > 0.0031308 ? 1.055 * std::pow(x, 1.0 / detail::GAMMA) - 0.055 : x * 12.92;
 }
 
-inline constexpr bool inGamut(const inc_lRGB &lRGB, double epsilon = 0.0) {
+inline constexpr bool
+inGamut(const inc_lRGB &lRGB, double epsilon = 0.0) {
     if (lRGB.r < -epsilon || lRGB.r > 1.0 + epsilon) { return false; }
     if (lRGB.g < -epsilon || lRGB.g > 1.0 + epsilon) { return false; }
     if (lRGB.b < -epsilon || lRGB.b > 1.0 + epsilon) { return false; }
@@ -299,7 +306,8 @@ inline constexpr bool inGamut(const inc_lRGB &lRGB, double epsilon = 0.0) {
     return true;
 }
 
-inline double deltaEOK(const inc_lRGB &OK1, const inc_lRGB &OK2) {
+inline double
+deltaEOK(const inc_lRGB &OK1, const inc_lRGB &OK2) {
     double d0 = OK1.r - OK2.r;
     double d1 = OK1.g - OK2.g;
     double d2 = OK1.b - OK2.b;
@@ -311,7 +319,8 @@ inline double deltaEOK(const inc_lRGB &OK1, const inc_lRGB &OK2) {
 // In Kubelka–Munk theory, the KS function reflects the ratio that controls the conversion from spectral
 // reflectance to an equivalent absorption/scattering coeffidetail::CIEnt. The formulation
 // <code>(1 - R)² / (2 * R)</code> is a common approximation that assumes a diffusely scattering medium.
-inline constexpr double KS_func(double R) {
+inline constexpr double
+KS_func(double R) {
     return (1.0 - R) * (1.0 - R) / (2.0 * R);
 }
 
@@ -327,12 +336,14 @@ inline constexpr double KS_func(double R) {
 // </pre>
 //
 // provides the appropriate transformation for blending multiple pigment spectra.
-inline double KM_func(double KS) {
+inline double
+KM_func(double KS) {
     return 1.0 + KS - std::sqrt(std::pow(KS, 2) + (2.0 * KS));
 }
 
-Color pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
-                                   std::vector<double> const &luminances);
+Color
+pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
+                   std::vector<double> const &luminances);
 
 } // namespace detail
 
@@ -345,19 +356,30 @@ Color pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRG
 class Converter {
 public:
     // All the following should be made constexpr once MSVC gets up to speed
-    static inc_lRGB sRGB_to_lRGB(const inc_sRGB &sRGB);
-    static inc_sRGB lRGB_to_sRGB(const inc_lRGB &lRGB);
-    static inc_lRGB XYZ_to_lRGB(const inc_lRGB &XYZ);
-    static inc_lRGB lRGB_to_XYZ(const inc_lRGB &lRGB);
-    static inc_lRGB XYZ_to_OKLab(const inc_lRGB &XYZ);
-    static inc_lRGB OKLab_to_XYZ(const inc_lRGB &OKLab);
-    static inc_lRGB OKLab_to_OKLCh(const inc_lRGB &OKLab);
-    static inc_lRGB OKLCh_to_OKLab(const inc_lRGB &OKLCh);
+    static inc_lRGB
+    sRGB_to_lRGB(const inc_sRGB &sRGB);
+    static inc_sRGB
+    lRGB_to_sRGB(const inc_lRGB &lRGB);
+    static inc_lRGB
+    XYZ_to_lRGB(const inc_lRGB &XYZ);
+    static inc_lRGB
+    lRGB_to_XYZ(const inc_lRGB &lRGB);
+    static inc_lRGB
+    XYZ_to_OKLab(const inc_lRGB &XYZ);
+    static inc_lRGB
+    OKLab_to_XYZ(const inc_lRGB &OKLab);
+    static inc_lRGB
+    OKLab_to_OKLCh(const inc_lRGB &OKLab);
+    static inc_lRGB
+    OKLCh_to_OKLab(const inc_lRGB &OKLCh);
 
-    static constexpr arr_dbl38 parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
-    static constexpr inc_sRGB  parseCssColor(const std::string &str);
+    static constexpr arr_dbl38
+    parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB);
+    static constexpr inc_sRGB
+    parseCssColor(const std::string &str);
 
-    static constexpr double luminance_from_lRGB(const inc_lRGB &lRBG) {
+    static constexpr double
+    luminance_from_lRGB(const inc_lRGB &lRBG) {
         // Only the Y from the XYZ tupple needs to be computed for luminance
         double Y  = 0;
         Y        += detail::CONVERSION::RGB_XYZ[1].r * lRBG.r;
@@ -366,11 +388,13 @@ public:
         return std::max(Y, detail::EPS_MIN);
     }
 
-    static constexpr double luminance_from_sRGB(const inc_sRGB &sRBG) {
+    static constexpr double
+    luminance_from_sRGB(const inc_sRGB &sRBG) {
         return luminance_from_lRGB(sRGB_to_lRGB(sRBG));
     }
 
-    static constexpr arr_dbl38 KS_from_lRGB(const inc_lRGB &lRBG) {
+    static constexpr arr_dbl38
+    KS_from_lRGB(const inc_lRGB &lRBG) {
         // Variable used as both temp Reflectance storage AND return value (reflectance gets overwritten)
         arr_dbl38 R_and_KS_res = parseSpectralReflectanceFromLRGB(lRBG);
         for (int i = 0; i < detail::SAMPLE_SIZE; ++i) { R_and_KS_res[i] = detail::KS_func(R_and_KS_res[i]); }
@@ -378,13 +402,17 @@ public:
     }
 
 
-    Converter()                             = delete; // no default constructor
-    Converter(const Converter &)            = delete; // no copy
-    Converter &operator=(const Converter &) = delete; // no assignment
-    ~Converter()                            = delete; // no destructor
-    void *operator new(std::size_t)         = delete; // no heap
-    void *operator new[](std::size_t)       = delete; // no heap array
-    void *operator new(std::size_t, void *) = delete; // blocked placement-new
+    Converter()                  = delete;      // no default constructor
+    Converter(const Converter &) = delete;      // no copy
+    Converter &
+    operator=(const Converter &) = delete;      // no assignment
+    ~Converter()                 = delete;      // no destructor
+    void *
+    operator new(std::size_t) = delete;         // no heap
+    void *
+    operator new[](std::size_t) = delete;       // no heap array
+    void *
+    operator new(std::size_t, void *) = delete; // blocked placement-new
 };
 
 // #######################################
@@ -458,15 +486,18 @@ public:
     }
 
     // Getters
-    inc_lRGB const &OKLab() const {
+    inc_lRGB const &
+    OKLab() const {
         if (! _OKLab) { _OKLab = Converter::XYZ_to_OKLab(XYZ); }
         return *_OKLab;
     }
-    inc_lRGB const &OKLCh() const {
+    inc_lRGB const &
+    OKLCh() const {
         if (! _OKLCh) { _OKLCh = Converter::OKLab_to_OKLCh(OKLab()); }
         return *_OKLCh;
     }
-    constexpr arr_dbl38 const &KS() const {
+    constexpr arr_dbl38 const &
+    KS() const {
         if (! _KS) {
             _KS           = arr_dbl38{};
             auto &_KS_ref = _KS.value();
@@ -478,12 +509,14 @@ public:
     // Methods
 private:
     // gamutMap (binary search of chroma)
-    static Color gamutMap(const Color &color, double jnd = 0.03, double eps = 0.0001);
+    static Color
+    gamutMap(const Color &color, double jnd = 0.03, double eps = 0.0001);
 
 public:
-    constexpr Color       toGamut(const gamutMap_methods &method = gamutMap_methods::map) const;
-    constexpr std::string toString(const std::string      &format = "hex",
-                                   const gamutMap_methods &method = gamutMap_methods::map) const;
+    constexpr Color
+    toGamut(const gamutMap_methods &method = gamutMap_methods::map) const;
+    constexpr std::string
+    toString(const std::string &format = "hex", const gamutMap_methods &method = gamutMap_methods::map) const;
 };
 
 
@@ -515,73 +548,92 @@ namespace pigment {
 // the influence of that particular color in the overall mix (simple weight)
 
 // Color class blending
-Color blend(const std::vector<std::pair<Color, double>> &colors);
-Color blend(const std::vector<Color> &colors);
+Color
+blend(const std::vector<std::pair<Color, double>> &colors);
+Color
+blend(const std::vector<Color> &colors);
 
 template <typename... PR_Cs_F>
 requires(sizeof...(PR_Cs_F) > 1) && (std::same_as<std::remove_cvref_t<PR_Cs_F>, std::pair<Color, double>> && ...)
-Color blend(const PR_Cs_F &...colors);
+Color
+blend(const PR_Cs_F &...colors);
 
 template <typename... Cs>
 requires(sizeof...(Cs) > 1) && (std::same_as<std::remove_cvref_t<Cs>, Color> && ...)
-Color blend(const Cs &...colors);
+Color
+blend(const Cs &...colors);
 
 
 // L_RGB blending
-Color blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f);
-Color blend(const std::vector<inc_lRGB> &colors_lrgb_f);
+Color
+blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f);
+Color
+blend(const std::vector<inc_lRGB> &colors_lrgb_f);
 
 template <typename... PR_LRGBs_F>
 requires(sizeof...(PR_LRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_LRGBs_F>, std::pair<inc_lRGB, double>> && ...)
-Color blend(const PR_LRGBs_F &...colors);
+Color
+blend(const PR_LRGBs_F &...colors);
 
 template <typename... LRGBs>
 requires(sizeof...(LRGBs) > 1) && (std::same_as<std::remove_cvref_t<LRGBs>, inc_lRGB> && ...)
-Color blend(const LRGBs &...colors);
+Color
+blend(const LRGBs &...colors);
 
 
 // S_RGB blending
-Color blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f);
-Color blend(const std::vector<inc_sRGB> &colors_srgb);
+Color
+blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f);
+Color
+blend(const std::vector<inc_sRGB> &colors_srgb);
 
 template <typename... PR_SRGBs_F>
 requires(sizeof...(PR_SRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_SRGBs_F>, std::pair<inc_sRGB, double>> && ...)
-Color blend(const PR_SRGBs_F &...colors);
+Color
+blend(const PR_SRGBs_F &...colors);
 
 template <typename... SRGBs>
 requires(sizeof...(SRGBs) > 1) && (std::same_as<std::remove_cvref_t<SRGBs>, inc_sRGB> && ...)
-Color blend(const SRGBs &...colors);
+Color
+blend(const SRGBs &...colors);
 
 
 // Generates a palette of colors transitioning between two colors.
-std::vector<Color> palette(Color const &a, Color const &b, size_t const sz);
+std::vector<Color>
+palette(Color const &a, Color const &b, size_t const sz);
 
 // Interpolates between multiple colors based on a parameter t.
 // Each additional argument should be an array with two elements: [Color, position].
-Color gradient(double t, const std::vector<std::pair<Color, double>> &stops);
+Color
+gradient(double t, const std::vector<std::pair<Color, double>> &stops);
 } // namespace pigment
 
 // ###############################
 // ### IMPLEMENTATION PART    ####
 // ###############################
 
-inline inc_lRGB Converter::sRGB_to_lRGB(const inc_sRGB &sRGB) {
+inline inc_lRGB
+Converter::sRGB_to_lRGB(const inc_sRGB &sRGB) {
     return {detail::uncompand(sRGB.r / 255.0), detail::uncompand(sRGB.g / 255.0), detail::uncompand(sRGB.b / 255.0)};
 }
-inline inc_sRGB Converter::lRGB_to_sRGB(const inc_lRGB &lRGB) {
+inline inc_sRGB
+Converter::lRGB_to_sRGB(const inc_lRGB &lRGB) {
     return {std::uint8_t(std::round(detail::compand(lRGB.r) * 255.0)),
             std::uint8_t(std::round(detail::compand(lRGB.g) * 255.0)),
             std::uint8_t(std::round(detail::compand(lRGB.b) * 255.0))};
 }
-inline inc_lRGB Converter::XYZ_to_lRGB(const inc_lRGB &XYZ) {
+inline inc_lRGB
+Converter::XYZ_to_lRGB(const inc_lRGB &XYZ) {
     return detail::mulMatVec(detail::CONVERSION::XYZ_RGB, XYZ);
 }
-inline inc_lRGB Converter::lRGB_to_XYZ(const inc_lRGB &lRGB) {
+inline inc_lRGB
+Converter::lRGB_to_XYZ(const inc_lRGB &lRGB) {
     return detail::mulMatVec(detail::CONVERSION::RGB_XYZ, lRGB);
 }
-inline inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
+inline inc_lRGB
+Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
     // lms = mat * XYZ
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::XYZ_LMS, XYZ);
     lms.r        = std::cbrt(lms.r);
@@ -590,7 +642,8 @@ inline inc_lRGB Converter::XYZ_to_OKLab(const inc_lRGB &XYZ) {
     inc_lRGB lab = detail::mulMatVec(detail::CONVERSION::LMS_LAB, lms);
     return lab;
 }
-inline inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
+inline inc_lRGB
+Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
     inc_lRGB lms = detail::mulMatVec(detail::CONVERSION::LAB_LMS, OKLab);
     lms.r        = std::pow(lms.r, 3);
     lms.g        = std::pow(lms.g, 3);
@@ -598,18 +651,21 @@ inline inc_lRGB Converter::OKLab_to_XYZ(const inc_lRGB &OKLab) {
     inc_lRGB XYZ = detail::mulMatVec(detail::CONVERSION::LMS_XYZ, lms);
     return XYZ;
 }
-inline inc_lRGB Converter::OKLab_to_OKLCh(const inc_lRGB &OKLab) {
+inline inc_lRGB
+Converter::OKLab_to_OKLCh(const inc_lRGB &OKLab) {
     double h = std::atan2(OKLab.b, OKLab.g) * 180.0 / std::numbers::pi;
     if (h < 0.0) { h += 360.0; }
     return {OKLab.r, std::sqrt(std::pow(OKLab.g, 2) + std::pow(OKLab.b, 2)), h};
 }
-inline inc_lRGB Converter::OKLCh_to_OKLab(const inc_lRGB &OKLCh) {
+inline inc_lRGB
+Converter::OKLCh_to_OKLab(const inc_lRGB &OKLCh) {
     return {OKLCh.r, OKLCh.g * std::cos(OKLCh.b * std::numbers::pi / 180.0),
             OKLCh.g * std::sin(OKLCh.b * std::numbers::pi / 180.0)};
 }
 
 
-constexpr arr_dbl38 Converter::parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB) {
+constexpr arr_dbl38
+Converter::parseSpectralReflectanceFromLRGB(const inc_lRGB &lRGB) {
     // This is the inverse of lRGB_to_R
     // The code subtracts minimum w, c, m, y, r, g, b contributions using detail::BASE_SPECTRA.
 
@@ -635,7 +691,8 @@ constexpr arr_dbl38 Converter::parseSpectralReflectanceFromLRGB(const inc_lRGB &
 }
 
 // CSS color parsing (#hex or rgb(...))
-constexpr inc_sRGB Converter::parseCssColor(const std::string &str) {
+constexpr inc_sRGB
+Converter::parseCssColor(const std::string &str) {
     if (str.empty()) { throw std::invalid_argument("Empty CSS color string"); }
     if (str[0] == '#') {
         std::string hex = str.substr(1);
@@ -695,7 +752,8 @@ constexpr inc_sRGB Converter::parseCssColor(const std::string &str) {
 }
 
 // gamutMap (binary search of chroma)
-inline Color Color::gamutMap(const Color &color, double jnd, double eps) {
+inline Color
+Color::gamutMap(const Color &color, double jnd, double eps) {
     double L = color.OKLCh().r;
     if (L >= 1.0) { return Color(inc_sRGB{255, 255, 255}); }
     if (L <= 0.0) { return Color(inc_sRGB{0, 0, 0}); }
@@ -746,7 +804,8 @@ inline Color Color::gamutMap(const Color &color, double jnd, double eps) {
     return Color(lr);
 }
 
-constexpr Color Color::toGamut(const gamutMap_methods &method) const {
+constexpr Color
+Color::toGamut(const gamutMap_methods &method) const {
     if (method == gamutMap_methods::clip) {
         inc_sRGB clipped = sRGB;
         return Color(clipped);
@@ -755,7 +814,8 @@ constexpr Color Color::toGamut(const gamutMap_methods &method) const {
     else { throw std::invalid_argument("Unknown gamut mapping method: "); }
 }
 
-constexpr std::string Color::toString(const std::string &format, const gamutMap_methods &method) const {
+constexpr std::string
+Color::toString(const std::string &format, const gamutMap_methods &method) const {
     inc_sRGB outRGB;
     if (! detail::inGamut(lRGB)) {
         if (method == gamutMap_methods::clip) {
@@ -791,7 +851,8 @@ constexpr std::string Color::toString(const std::string &format, const gamutMap_
 // ##########################################
 
 // Color class blending
-inline Color pigment::blend(const std::vector<std::pair<Color, double>> &colors) {
+inline Color
+pigment::blend(const std::vector<std::pair<Color, double>> &colors) {
     std::vector<arr_dbl38> KSs;
     KSs.reserve(colors.size());
     for (auto const &col : colors) { KSs.push_back(Converter::KS_from_lRGB(col.first.lRGB)); }
@@ -812,7 +873,8 @@ inline Color pigment::blend(const std::vector<std::pair<Color, double>> &colors)
     return cc.lRGB;
 }
 
-inline Color pigment::blend(const std::vector<Color> &colors) {
+inline Color
+pigment::blend(const std::vector<Color> &colors) {
     std::vector<arr_dbl38> KSs;
     KSs.reserve(colors.size());
     for (auto const &col : colors) { KSs.push_back(Converter::KS_from_lRGB(col.lRGB)); }
@@ -835,7 +897,8 @@ inline Color pigment::blend(const std::vector<Color> &colors) {
 
 template <typename... PR_Cs_F>
 requires(sizeof...(PR_Cs_F) > 1) && (std::same_as<std::remove_cvref_t<PR_Cs_F>, std::pair<Color, double>> && ...)
-Color pigment::blend(const PR_Cs_F &...colors) {
+Color
+pigment::blend(const PR_Cs_F &...colors) {
 
     std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
@@ -854,7 +917,8 @@ Color pigment::blend(const PR_Cs_F &...colors) {
 
 template <typename... Cs>
 requires(sizeof...(Cs) > 1) && (std::same_as<std::remove_cvref_t<Cs>, Color> && ...)
-Color pigment::blend(const Cs &...colors) {
+Color
+pigment::blend(const Cs &...colors) {
     std::vector<double>   factors(sizeof...(Cs), 1);
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -869,7 +933,8 @@ Color pigment::blend(const Cs &...colors) {
 
 
 // L_RGB blending
-inline Color pigment::blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f) {
+inline Color
+pigment::blend(const std::vector<std::pair<inc_lRGB, double>> &colors_lrgb_f) {
 
     std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
@@ -887,7 +952,8 @@ inline Color pigment::blend(const std::vector<std::pair<inc_lRGB, double>> &colo
     return detail::pigment_blend_HLPR(factors, lRGBs, luminances);
 }
 
-inline Color pigment::blend(const std::vector<inc_lRGB> &colors_lrgb_f) {
+inline Color
+pigment::blend(const std::vector<inc_lRGB> &colors_lrgb_f) {
     std::vector<double> factors(colors_lrgb_f.size(), 1);
     std::vector<double> luminances;
     luminances.reserve(colors_lrgb_f.size());
@@ -902,7 +968,8 @@ inline Color pigment::blend(const std::vector<inc_lRGB> &colors_lrgb_f) {
 template <typename... PR_LRGBs_F>
 requires(sizeof...(PR_LRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_LRGBs_F>, std::pair<inc_lRGB, double>> && ...)
-Color pigment::blend(const PR_LRGBs_F &...colors) {
+Color
+pigment::blend(const PR_LRGBs_F &...colors) {
     std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -920,7 +987,8 @@ Color pigment::blend(const PR_LRGBs_F &...colors) {
 
 template <typename... LRGBs>
 requires(sizeof...(LRGBs) > 1) && (std::same_as<std::remove_cvref_t<LRGBs>, inc_lRGB> && ...)
-Color pigment::blend(const LRGBs &...colors) {
+Color
+pigment::blend(const LRGBs &...colors) {
     std::vector<double>   factors(sizeof...(LRGBs), 1.0);
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -935,7 +1003,8 @@ Color pigment::blend(const LRGBs &...colors) {
 
 
 // S_RGB blending
-inline Color pigment::blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f) {
+inline Color
+pigment::blend(const std::vector<std::pair<inc_sRGB, double>> &colors_srgb_f) {
     std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -952,7 +1021,8 @@ inline Color pigment::blend(const std::vector<std::pair<inc_sRGB, double>> &colo
     return detail::pigment_blend_HLPR(factors, lRGBs, luminances);
 }
 
-inline Color pigment::blend(const std::vector<inc_sRGB> &colors_srgb) {
+inline Color
+pigment::blend(const std::vector<inc_sRGB> &colors_srgb) {
     std::vector<double>   factors(colors_srgb.size(), 1.0);
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -971,7 +1041,8 @@ inline Color pigment::blend(const std::vector<inc_sRGB> &colors_srgb) {
 template <typename... PR_SRGBs_F>
 requires(sizeof...(PR_SRGBs_F) > 1) &&
         (std::same_as<std::remove_cvref_t<PR_SRGBs_F>, std::pair<inc_sRGB, double>> && ...)
-Color pigment::blend(const PR_SRGBs_F &...colors) {
+Color
+pigment::blend(const PR_SRGBs_F &...colors) {
     std::vector<double>   factors;
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -989,7 +1060,8 @@ Color pigment::blend(const PR_SRGBs_F &...colors) {
 
 template <typename... SRGBs>
 requires(sizeof...(SRGBs) > 1) && (std::same_as<std::remove_cvref_t<SRGBs>, inc_sRGB> && ...)
-Color pigment::blend(const SRGBs &...colors) {
+Color
+pigment::blend(const SRGBs &...colors) {
     std::vector<double>   factors(sizeof...(SRGBs), 1.0);
     std::vector<inc_lRGB> lRGBs;
     std::vector<double>   luminances;
@@ -1006,7 +1078,8 @@ Color pigment::blend(const SRGBs &...colors) {
 
 
 // Generates a palette of colors transitioning between two colors.
-inline std::vector<Color> pigment::palette(Color const &a, Color const &b, size_t const sz) {
+inline std::vector<Color>
+pigment::palette(Color const &a, Color const &b, size_t const sz) {
     std::vector<Color> out;
     out.reserve(sz);
     for (int i = 0; i < sz; ++i) { out.push_back(pigment::blend({{a, double(sz - 1 - i)}, {b, double(i)}})); }
@@ -1015,7 +1088,8 @@ inline std::vector<Color> pigment::palette(Color const &a, Color const &b, size_
 
 // Interpolates between multiple colors based on a parameter t.
 // Each additional argument should be an array with two elements: [Color, position].
-inline Color pigment::gradient(double t, const std::vector<std::pair<Color, double>> &stops) {
+inline Color
+pigment::gradient(double t, const std::vector<std::pair<Color, double>> &stops) {
     std::pair<Color, double> a      = {Color(inc_sRGB{0, 0, 0}), 0.0};
     std::pair<Color, double> b      = a;
     bool                     foundA = false, foundB = false;
@@ -1041,8 +1115,9 @@ inline Color pigment::gradient(double t, const std::vector<std::pair<Color, doub
 }
 
 
-inline Color detail::pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
-                                        std::vector<double> const &luminances) {
+inline Color
+detail::pigment_blend_HLPR(std::vector<double> const &factors, std::vector<inc_lRGB> const &lRGBs,
+                           std::vector<double> const &luminances) {
     if (factors.size() == 0 || factors.size() != lRGBs.size() || lRGBs.size() != luminances.size()) {
         std::exit(1); // Impossible, we are calling the enclosing lambda wrong
     }

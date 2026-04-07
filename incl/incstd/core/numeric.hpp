@@ -12,14 +12,16 @@ using namespace incom::standard;
 
 template <typename T>
 requires std::is_integral_v<T>
-int get_numOfDigits(T const &integralNumber) {
+int
+get_numOfDigits(T const &integralNumber) {
     if constexpr (std::is_unsigned_v<T>) { return integralNumber == 0 ? 1 : std::trunc(log10(integralNumber)) + 1; }
     else { return integralNumber == 0 ? 1 : std::trunc(log10(std::abs(integralNumber))) + 1; }
 }
 
 template <typename T>
 requires std::is_arithmetic_v<std::ranges::range_value_t<T>>
-auto compute_variance(T &range) {
+auto
+compute_variance(T &range) {
     using v_t    = std::ranges::range_value_t<T>;
     v_t    sum   = 0;
     size_t count = 0;
@@ -36,7 +38,8 @@ auto compute_variance(T &range) {
 
 template <typename T>
 requires std::is_arithmetic_v<std::ranges::range_value_t<T>>
-auto compute_stdDeviation(T &&range) {
+auto
+compute_stdDeviation(T &&range) {
     return (std::sqrt(compute_variance(std::forward<T>(range))));
 }
 

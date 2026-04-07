@@ -1,3 +1,2 @@
 CompileFlags:
   BuiltinHeaders: QueryDriver
-  Add: [-D__CLANGD__]

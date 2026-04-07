@@ -18,7 +18,8 @@ struct VariantUtility {
     // Very useful in 'prototype' pattern going from 'value land' into 'type land'
     // PTC = Pass To Constructors
     template <typename... PTC>
-    static constexpr auto gen_alternsMap(PTC const &...ptc) {
+    static constexpr auto
+    gen_alternsMap(PTC const &...ptc) {
         return std::unordered_map<std::type_index, const std::variant<Ts...>>{
             {typegen::get_typeIndex<Ts>(), std::variant<Ts...>(Ts(std::forward<decltype(ptc)>(ptc)...))}...};
     };

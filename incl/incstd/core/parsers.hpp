@@ -21,7 +21,8 @@ private:
         size_t                   cursor              = 0;
         int                      somethingNotFoundAt = -1;
 
-        oneLineProcessedHolder &operator<<(auto &&toInsert) {
+        oneLineProcessedHolder &
+        operator<<(auto &&toInsert) {
             if (toInsert) { insideVofS.push_back(toInsert.to_string()); }
             else { somethingNotFoundAt = cursor; }
             cursor++;
@@ -44,27 +45,33 @@ private:
         size_t cursor              = 0;
         int    somethingNotFoundAt = -1;
 
-        fileProcessedHolder &operator<<(auto &&toInsert) {
+        fileProcessedHolder &
+        operator<<(auto &&toInsert) {
             if (toInsert) { data[cursor++].push_back(toInsert.to_string()); }
             else { somethingNotFoundAt = cursor++; }
             return *this;
         }
 
-        void resetCursor() { cursor = 0; }
+        void
+        resetCursor() {
+            cursor = 0;
+        }
     };
 
     struct fileProcessedHolder_2 {
         std::vector<std::vector<std::string>> data                = std::vector<std::vector<std::string>>();
         int                                   somethingNotFoundAt = -1;
 
-        fileProcessedHolder_2 &operator<<(auto &&toInsert) {
+        fileProcessedHolder_2 &
+        operator<<(auto &&toInsert) {
             if (toInsert) { data.back().push_back(toInsert.to_string()); }
             else { somethingNotFoundAt = data.size(); }
             return *this;
         }
     };
 
-    static auto findNextWithinLine(auto &ctreSrchObj, std::string::iterator &begin, const std::string::iterator &end) {
+    static auto
+    findNextWithinLine(auto &ctreSrchObj, std::string::iterator &begin, const std::string::iterator &end) {
         auto result = ctreSrchObj(begin, end);
         if (result) { begin = result.get_end_position(); }
         return result;
@@ -80,7 +87,8 @@ public:
     */
 
     template <typename... ctreSrch>
-    static std::vector<std::string> processOneLine(std::string &line, ctreSrch &&...perItemInLine) {
+    static std::vector<std::string>
+    processOneLine(std::string &line, ctreSrch &&...perItemInLine) {
         auto                   bg  = line.begin();
         auto                   end = line.end();
         oneLineProcessedHolder sink;
@@ -89,7 +97,8 @@ public:
     }
 
     template <typename... ctreSrch>
-    static std::vector<std::string> processOneLineRPToneVect(std::string &line, ctreSrch &&...perItemInLine) {
+    static std::vector<std::string>
+    processOneLineRPToneVect(std::string &line, ctreSrch &&...perItemInLine) {
         oneLineProcessedHolder sink;
 
         auto bg  = line.begin();
@@ -103,7 +112,8 @@ public:
     }
 
     template <typename... ctreSrch>
-    static std::vector<std::vector<std::string>> processOneLineRPT(std::string &line, ctreSrch &&...perItemInLine) {
+    static std::vector<std::vector<std::string>>
+    processOneLineRPT(std::string &line, ctreSrch &&...perItemInLine) {
         constexpr size_t                              searchForNumOfItems = sizeof...(perItemInLine);
         fileProcessedHolder<sizeof...(perItemInLine)> sink;
 
@@ -121,8 +131,8 @@ public:
     }
 
     template <typename... ctreSrch>
-    static std::vector<std::vector<std::string>> processOneLineRPTinFile(std::string &dataFile,
-                                                                         ctreSrch &&...perItemInLine) {
+    static std::vector<std::vector<std::string>>
+    processOneLineRPTinFile(std::string &dataFile, ctreSrch &&...perItemInLine) {
         std::ifstream iStream;
         iStream.clear();
         iStream.open(dataFile);
@@ -137,7 +147,8 @@ public:
     }
 
     template <typename... ctreSrch>
-    static std::vector<std::vector<std::string>> processFile(std::string &dataFile, ctreSrch &&...perItemInLine) {
+    static std::vector<std::vector<std::string>>
+    processFile(std::string &dataFile, ctreSrch &&...perItemInLine) {
         std::ifstream iStream;
         iStream.clear();
         iStream.open(dataFile);
@@ -158,7 +169,8 @@ public:
         return sink.data;
     }
     template <typename... ctreSrch>
-    static std::vector<std::vector<std::string>> processFileRPT(std::string &dataFile, ctreSrch &&...perItemInLine) {
+    static std::vector<std::vector<std::string>>
+    processFileRPT(std::string &dataFile, ctreSrch &&...perItemInLine) {
         std::ifstream iStream;
         iStream.clear();
         iStream.open(dataFile);

@@ -13,7 +13,8 @@ Uses 'swapping in circles' method ... should be pretty fast
 template <typename T>
 requires more_concepts::random_access_container<T> && more_concepts::random_access_container<typename T::value_type> &&
          std::swappable<typename T::value_type::value_type>
-void matrixRotateLeft(T &VofVlike) {
+void
+matrixRotateLeft(T &VofVlike) {
     int sideLength = VofVlike.size() - 1;
     if (sideLength < 1) { return; }
     if (std::ranges::any_of(VofVlike, [&](auto const &line) { return line.size() != VofVlike.size(); })) { return; }
@@ -32,7 +33,8 @@ void matrixRotateLeft(T &VofVlike) {
 template <typename T>
 requires more_concepts::random_access_container<T> && more_concepts::random_access_container<typename T::value_type> &&
          std::swappable<typename T::value_type::value_type>
-void matrixRotateRight(T &VofVlike) {
+void
+matrixRotateRight(T &VofVlike) {
     int sideLength = VofVlike.size() - 1;
     if (sideLength < 1) { return; }
     if (std::ranges::any_of(VofVlike, [&](auto const &line) { return line.size() != VofVlike.size(); })) { return; }

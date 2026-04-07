@@ -41,16 +41,25 @@ public:
             std::variant<EmbeddedWoff2, Url, Local, RawSrc> value;
 
             // helpers for concise construction
-            static FontFaceSource embedded(std::string_view base64Encoded_woff2) {
+            static FontFaceSource
+            embedded(std::string_view base64Encoded_woff2) {
                 return FontFaceSource{EmbeddedWoff2{std::string(base64Encoded_woff2)}};
             }
-            static FontFaceSource url(std::string url, std::string format = "woff2") {
+            static FontFaceSource
+            url(std::string url, std::string format = "woff2") {
                 return FontFaceSource{Url{std::move(url), std::move(format)}};
             }
-            static FontFaceSource local(std::string name) { return FontFaceSource{Local{std::move(name)}}; }
-            static FontFaceSource raw(std::string_view sv) { return FontFaceSource{RawSrc{std::string(sv)}}; }
+            static FontFaceSource
+            local(std::string name) {
+                return FontFaceSource{Local{std::move(name)}};
+            }
+            static FontFaceSource
+            raw(std::string_view sv) {
+                return FontFaceSource{RawSrc{std::string(sv)}};
+            }
 
-            std::string create_srcElement() const {
+            std::string
+            create_srcElement() const {
                 std::string res{};
 
                 auto visi = variant_utils::Overloads{
@@ -95,7 +104,8 @@ public:
             std::vector<FontFaceSource> sources; // one or more src entries
 
         private:
-            std::string create_htmlFFElement() const {
+            std::string
+            create_htmlFFElement() const {
                 std::string res("@font-face {\n"sv);
 
                 if (family) {
@@ -166,7 +176,8 @@ public:
 
 
     // Convert ANSI-containing text to HTML string.
-    std::string convert(std::string_view input) {
+    std::string
+    convert(std::string_view input) {
         styling_ = _Styling_{};
         hyperlink_stack_.clear();
 
@@ -243,7 +254,8 @@ public:
         return out;
     }
 
-    std::string convert2_canvasDrawn(std::string_view input) {
+    std::string
+    convert2_canvasDrawn(std::string_view input) {
         styling_ = _Styling_{};
         hyperlink_stack_.clear();
 
@@ -331,7 +343,8 @@ private:
         std::optional<std::string_view> textDecorNone;
 
 
-        std::optional<std::string> build_stylingString() {
+        std::optional<std::string>
+        build_stylingString() {
             std::string res;
             if (fg) { res.append(fg.value()); }
             if (bg) { res.append(bg.value()); }
@@ -358,8 +371,8 @@ private:
     const std::string _baseFontName = "DefaultName";
 
     // FontFace naming helpers
-    std::string ff_create_uniqueFontName(std::string                                                     base,
-                                         ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> &used) {
+    std::string
+    ff_create_uniqueFontName(std::string base, ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> &used) {
         if (base.empty()) { base = _baseFontName; }
         std::string name = base;
         size_t      n    = 1;
@@ -368,7 +381,8 @@ private:
         return name;
     }
 
-    void ff_normalize() {
+    void
+    ff_normalize() {
         if (! opts_.font_faces.has_value()) { return; }
 
         ankerl::unordered_dense::set<std::string, hashing::XXH3Hasher> used;
@@ -381,7 +395,8 @@ private:
     }
 
     // Emit text chunk with current styling into out, wrapping spans and hyperlink as needed.
-    void emit_text_segment(std::string_view text, std::string &out) {
+    void
+    emit_text_segment(std::string_view text, std::string &out) {
         if (text.empty()) { return; }
 
         // escape HTML
@@ -445,7 +460,8 @@ private:
     //  - OSC 8 ; params ; URI ST  (hyperlink start/end)
     //  - OSC 0/2 ... ST (window title) -> ignore
     //  - other sequences -> ignore / skip until terminator
-    std::string parse_and_emit(std::string_view input) {
+    std::string
+    parse_and_emit(std::string_view input) {
         std::string out;
         out.reserve(input.size() * 8);
         size_t       i = 0, start_plain = 0;
@@ -611,7 +627,8 @@ private:
     }
 
     // Apply SGR parameters to current style (mutates styling)
-    void apply_sgr(std::vector<int> const &params) {
+    void
+    apply_sgr(std::vector<int> const &params) {
         if (params.empty()) {
             // reset
             styling_ = _Styling_{};

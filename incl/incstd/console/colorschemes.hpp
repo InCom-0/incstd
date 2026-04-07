@@ -18,7 +18,10 @@ struct scheme16 {
     inc_sRGB                   cursor;
     inc_sRGB                   selection;
 
-    inc_sRGB const &get_nonBWColor(size_t id) const { return palette.at(id + 1 + (id > 7)); }
+    inc_sRGB const &
+    get_nonBWColor(size_t id) const {
+        return palette.at(id + 1 + (id > 7));
+    }
 };
 struct scheme256 {
     std::optional<std::string> name = std::nullopt;
@@ -28,10 +31,14 @@ struct scheme256 {
     inc_sRGB                   cursor;
     inc_sRGB                   selection;
 
-    inc_sRGB const &get_nonBWColor(size_t id) const { return palette.at(id > 11 ? id : (id + 1 + (id > 7))); }
+    inc_sRGB const &
+    get_nonBWColor(size_t id) const {
+        return palette.at(id > 11 ? id : (id + 1 + (id > 7)));
+    }
 };
 
-inline constexpr scheme16 conv_s256s16(const scheme256 &from) {
+inline constexpr scheme16
+conv_s256s16(const scheme256 &from) {
     return scheme16{.name = from.name,
                     .palette{from.palette[0], from.palette[1], from.palette[2], from.palette[3], from.palette[4],
                              from.palette[5], from.palette[6], from.palette[7], from.palette[8], from.palette[9],
@@ -43,7 +50,8 @@ inline constexpr scheme16 conv_s256s16(const scheme256 &from) {
                     .selection{from.selection}};
 }
 
-inline constexpr scheme256 conv_s16s256(const scheme16 &from) {
+inline constexpr scheme256
+conv_s16s256(const scheme16 &from) {
     scheme256 res{.name = from.name,
                   .palette{from.palette[0], from.palette[1], from.palette[2], from.palette[3], from.palette[4],
                            from.palette[5], from.palette[6], from.palette[7], from.palette[8], from.palette[9],
@@ -57,11 +65,13 @@ inline constexpr scheme256 conv_s16s256(const scheme16 &from) {
     return res;
 }
 
-inline constexpr int get_SGR_fg(ANSI_Color16 col) {
+inline constexpr int
+get_SGR_fg(ANSI_Color16 col) {
     constexpr std::array<int, 16> map{30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97};
     return map[static_cast<int>(col)];
 }
-inline constexpr int get_SGR_bg(ANSI_Color16 col) {
+inline constexpr int
+get_SGR_bg(ANSI_Color16 col) {
     constexpr std::array<int, 16> map{40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107};
     return map[static_cast<int>(col)];
 }

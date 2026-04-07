@@ -42,10 +42,10 @@ public:
     [[nodiscard]] constexpr _kcomb_iter(base_iterator begin, base_sentinel end) : _kcomb_iter(idxSeq, begin, end) {}
 
 
-
     // TODO: Explore possibility of turning it into a coroutine somehow
     //  Prefix increment
-    constexpr auto operator++() -> _kcomb_iter & {
+    constexpr auto
+    operator++() -> _kcomb_iter & {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
             size_t firstIncremID = 0;
             if (((std::next(iters[Is]) == end_iters[Is] ? (true) : (iters[Is]++, firstIncremID = Is, false)) && ...)) {
@@ -67,22 +67,26 @@ public:
     }
 
     // Postfix increment
-    [[nodiscard]] constexpr auto operator++(int) -> _kcomb_iter {
+    [[nodiscard]] constexpr auto
+    operator++(int) -> _kcomb_iter {
         const auto pre = *this;
         ++(*this);
         return pre;
     }
 
-    [[nodiscard]] constexpr auto operator*() const -> reference {
+    [[nodiscard]] constexpr auto
+    operator*() const -> reference {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> reference {
             return std::tie((*((iters[Is])))...);
         };
         return lam(idxSeq);
     }
 
-    [[nodiscard]] constexpr auto operator<=>(const _kcomb_iter &) const = default;
+    [[nodiscard]] constexpr auto
+    operator<=>(const _kcomb_iter &) const = default;
 
-    [[nodiscard]] constexpr auto operator==(const _kcomb_sentinel<RANGE> & /*unused*/) const -> bool {
+    [[nodiscard]] constexpr auto
+    operator==(const _kcomb_sentinel<RANGE> & /*unused*/) const -> bool {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...> seq) -> bool {
             return ((iters[Is] == end_iters[Is] ? (true) : false) && ...);
         };
@@ -101,11 +105,15 @@ public:
     template <size_t KK = K>
     [[nodiscard]] constexpr explicit _kcomb_view(RANGE range) : base_{std::move(range)} {}
 
-    [[nodiscard]] constexpr auto begin() const -> _kcomb_iter<RANGE, K> {
+    [[nodiscard]] constexpr auto
+    begin() const -> _kcomb_iter<RANGE, K> {
         return _kcomb_iter<RANGE, K>{std::ranges::begin(base_), std::ranges::end(base_)};
     }
 
-    [[nodiscard]] constexpr auto end() const -> _kcomb_sentinel<RANGE> { return {}; }
+    [[nodiscard]] constexpr auto
+    end() const -> _kcomb_sentinel<RANGE> {
+        return {};
+    }
 };
 
 // template <std::ranges::sized_range RANGE>
@@ -114,7 +122,8 @@ public:
 template <size_t K>
 struct _kcomb_fn : std::ranges::range_adaptor_closure<_kcomb_fn<K>> {
     template <typename RANGE>
-    constexpr auto operator()(RANGE &&range) const {
+    constexpr auto
+    operator()(RANGE &&range) const {
         return _kcomb_view<std::views::all_t<RANGE>, K>{std::forward<RANGE>(range)};
     }
 };

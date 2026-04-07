@@ -30,7 +30,8 @@ constexpr bool _is_specialization_of<TT<Ts...> const &, TT> = true;
 
 template <typename... Ts>
 struct _types_noneSame {
-    static consteval bool operator()() {
+    static consteval bool
+    operator()() {
         std::vector<const std::type_info *> typeVect{&typeid(Ts)...};
         for (auto [lhs, rhs] : incom::standard::views::combinations_k<2uz>(typeVect)) {
             if (*lhs == *rhs) { return false; }

@@ -21,10 +21,19 @@ public:
     doubleBuffer() : __dataA(T()), __dataB(T()), current(&__dataA), next(&__dataB) {};
     doubleBuffer(T initial_data) : __dataA(initial_data), __dataB(initial_data), current(&__dataA), next(&__dataB) {};
 
-    T &getCurrent() const { return (*current); };
-    T &getNext() const { return (*next); }
+    T &
+    getCurrent() const {
+        return (*current);
+    };
+    T &
+    getNext() const {
+        return (*next);
+    }
 
-    void swapBuffers() { std::swap(current, next); }
+    void
+    swapBuffers() {
+        std::swap(current, next);
+    }
 };
 
 

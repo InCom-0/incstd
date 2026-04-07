@@ -35,32 +35,45 @@ public:
     using result_t = std::expected<inc_sRGB, err_terminal>;
 
     // query palette index 0..255 (returns expected)
-    [[nodiscard]] static constexpr result_t get_paletteIdx(int index) { return queryPaletteIndex(index); }
+    [[nodiscard]] static constexpr result_t
+    get_paletteIdx(int index) {
+        return queryPaletteIndex(index);
+    }
 
     // convenience: always returns something (default palette on failure)
-    [[nodiscard]] static constexpr inc_sRGB get_paletteIdx_fb(int index) noexcept {
+    [[nodiscard]] static constexpr inc_sRGB
+    get_paletteIdx_fb(int index) noexcept {
         auto res = queryPaletteIndex(index);
         return res ? *res : get_defaultColor(index);
     }
 
     // foreground
-    [[nodiscard]] static constexpr result_t get_foreground() { return queryForeground(); }
+    [[nodiscard]] static constexpr result_t
+    get_foreground() {
+        return queryForeground();
+    }
 
-    [[nodiscard]] static constexpr inc_sRGB get_foreground_fb() noexcept {
+    [[nodiscard]] static constexpr inc_sRGB
+    get_foreground_fb() noexcept {
         auto res = queryForeground();
         return res ? *res : get_defaultColor(7);
     }
 
     // background
-    [[nodiscard]] static constexpr result_t get_background() { return queryBackground(); }
+    [[nodiscard]] static constexpr result_t
+    get_background() {
+        return queryBackground();
+    }
 
-    [[nodiscard]] static constexpr inc_sRGB get_background_fb() noexcept {
+    [[nodiscard]] static constexpr inc_sRGB
+    get_background_fb() noexcept {
         auto res = queryBackground();
         return res ? *res : get_defaultColor(0);
     }
 
     // cursor
-    [[nodiscard]] static constexpr result_t get_cursorCol() {
+    [[nodiscard]] static constexpr result_t
+    get_cursorCol() {
 #ifdef _WIN32
         return queryCursorCol();
 #else
@@ -68,7 +81,8 @@ public:
 #endif
     }
 
-    [[nodiscard]] static constexpr inc_sRGB get_cursorCol_fb() noexcept {
+    [[nodiscard]] static constexpr inc_sRGB
+    get_cursorCol_fb() noexcept {
 #ifdef _WIN32
         auto res = queryCursorCol();
         return res ? *res : get_defaultColor(static_cast<int>(ANSI_Color16::Bright_White));
@@ -79,7 +93,8 @@ public:
     }
 
     // get all 16 colors at once
-    [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16() noexcept {
+    [[nodiscard]] static constexpr std::expected<palette16, err_terminal>
+    get_palette16() noexcept {
         palette16 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
             auto res = queryPaletteIndex(i);
@@ -90,7 +105,8 @@ public:
     }
 
     // get all 16 colors at once with fallback
-    [[nodiscard]] static constexpr std::expected<palette16, err_terminal> get_palette16_fb() noexcept {
+    [[nodiscard]] static constexpr std::expected<palette16, err_terminal>
+    get_palette16_fb() noexcept {
         palette16 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
             auto res = queryPaletteIndex(i);
@@ -101,7 +117,8 @@ public:
     }
 
     // get all 256 colors at once
-    [[nodiscard]] static constexpr std::expected<palette256, err_terminal> get_palette256() noexcept {
+    [[nodiscard]] static constexpr std::expected<palette256, err_terminal>
+    get_palette256() noexcept {
         palette256 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
             auto res = queryPaletteIndex(i);
@@ -112,7 +129,8 @@ public:
     }
 
     // get all 256 colors at once with fallback
-    [[nodiscard]] static constexpr std::expected<palette256, err_terminal> get_palette256_fb() noexcept {
+    [[nodiscard]] static constexpr std::expected<palette256, err_terminal>
+    get_palette256_fb() noexcept {
         palette256 colors{};
         for (int i = 0; i < std::tuple_size_v<decltype(colors)>; ++i) {
             auto res = queryPaletteIndex(i);
@@ -123,7 +141,8 @@ public:
     }
 
     // Get color from the 'default' palette
-    [[nodiscard]] static constexpr inc_sRGB get_defaultColor(int index) noexcept {
+    [[nodiscard]] static constexpr inc_sRGB
+    get_defaultColor(int index) noexcept {
         if (! index256_valid(index)) { return inc_sRGB{255, 255, 255}; }
         return color_schemes::defaultScheme256.palette[index];
     }
@@ -131,8 +150,14 @@ public:
 private:
     // ────────────── INTERNAL ──────────────
 
-    [[nodiscard]] static constexpr bool index16_valid(int idx) noexcept { return idx >= 0 && idx <= 15; }
-    [[nodiscard]] static constexpr bool index256_valid(int idx) noexcept { return idx >= 0 && idx <= 255; }
+    [[nodiscard]] static constexpr bool
+    index16_valid(int idx) noexcept {
+        return idx >= 0 && idx <= 15;
+    }
+    [[nodiscard]] static constexpr bool
+    index256_valid(int idx) noexcept {
+        return idx >= 0 && idx <= 255;
+    }
 
 #ifdef _WIN32
     struct handle_guard {
@@ -141,17 +166,23 @@ private:
         ~handle_guard() {
             if (h != INVALID_HANDLE_VALUE) { ::CloseHandle(h); }
         }
-        handle_guard(const handle_guard &)            = delete;
-        handle_guard &operator=(const handle_guard &) = delete;
+        handle_guard(const handle_guard &) = delete;
+        handle_guard &
+        operator=(const handle_guard &) = delete;
         handle_guard(handle_guard &&o) noexcept : h(o.h) { o.h = INVALID_HANDLE_VALUE; }
-        handle_guard &operator=(handle_guard &&o) noexcept {
+        handle_guard &
+        operator=(handle_guard &&o) noexcept {
             if (h != INVALID_HANDLE_VALUE) { ::CloseHandle(h); }
             h   = o.h;
             o.h = INVALID_HANDLE_VALUE;
             return *this;
         }
-        bool   valid() const noexcept { return h != INVALID_HANDLE_VALUE; }
-        HANDLE get() const noexcept { return h; }
+        bool
+        valid() const noexcept {
+            return h != INVALID_HANDLE_VALUE;
+        }
+        HANDLE
+        get() const noexcept { return h; }
     };
 
     struct console_mode_guard {
@@ -168,11 +199,13 @@ private:
         ~console_mode_guard() {
             if (active) { ::SetConsoleMode(h, oldMode); }
         }
-        console_mode_guard(const console_mode_guard &)            = delete;
-        console_mode_guard &operator=(const console_mode_guard &) = delete;
+        console_mode_guard(const console_mode_guard &) = delete;
+        console_mode_guard &
+        operator=(const console_mode_guard &) = delete;
     };
 
-    static constexpr bool write_all(HANDLE h, const char *data, size_t len) noexcept {
+    static constexpr bool
+    write_all(HANDLE h, const char *data, size_t len) noexcept {
         if (std::is_constant_evaluated()) { return false; }
         size_t done = 0;
         while (done < len) {
@@ -186,8 +219,8 @@ private:
         return true;
     }
 
-    static constexpr std::expected<std::string, err_terminal> read_reply_from_console(HANDLE hIn,
-                                                                                      int    timeoutMs = 500) noexcept {
+    static constexpr std::expected<std::string, err_terminal>
+    read_reply_from_console(HANDLE hIn, int timeoutMs = 500) noexcept {
         if (std::is_constant_evaluated()) { return std::unexpected(err_terminal::Unsupported); }
         using clock          = std::chrono::steady_clock;
         auto        deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
@@ -230,9 +263,7 @@ private:
                 }
 
                 ch = keyEvent.uChar.AsciiChar;
-                if (buf.empty() && ch != '\033') {
-                    return std::unexpected(err_terminal::Unsupported);
-                }
+                if (buf.empty() && ch != '\033') { return std::unexpected(err_terminal::Unsupported); }
 
                 DWORD consumed = 0;
                 if (! ::ReadConsoleInputA(hIn, &rec, 1, &consumed)) { return std::unexpected(err_terminal::IoError); }
@@ -250,8 +281,8 @@ private:
         return buf;
     }
 
-    static constexpr std::expected<std::string, err_terminal> send_osc_and_read(const std::string &osc,
-                                                                                int timeoutMs = 500) noexcept {
+    static constexpr std::expected<std::string, err_terminal>
+    send_osc_and_read(const std::string &osc, int timeoutMs = 500) noexcept {
         if (std::is_constant_evaluated()) { return std::unexpected(err_terminal::Unsupported); }
 
         handle_guard hOut(::CreateFileA("CONOUT$", GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -289,17 +320,25 @@ private:
         ~uniq_fd() {
             if (fd >= 0) { ::close(fd); }
         }
-        uniq_fd(const uniq_fd &)            = delete;
-        uniq_fd &operator=(const uniq_fd &) = delete;
+        uniq_fd(const uniq_fd &) = delete;
+        uniq_fd &
+        operator=(const uniq_fd &) = delete;
         uniq_fd(uniq_fd &&o) noexcept : fd(o.fd) { o.fd = -1; }
-        uniq_fd &operator=(uniq_fd &&o) noexcept {
+        uniq_fd &
+        operator=(uniq_fd &&o) noexcept {
             if (fd >= 0) { ::close(fd); }
             fd   = o.fd;
             o.fd = -1;
             return *this;
         }
-        bool valid() const noexcept { return fd >= 0; }
-        int  get() const noexcept { return fd; }
+        bool
+        valid() const noexcept {
+            return fd >= 0;
+        }
+        int
+        get() const noexcept {
+            return fd;
+        }
     };
 
     struct termios_guard {
@@ -318,11 +357,13 @@ private:
         ~termios_guard() {
             if (active) { tcsetattr(fd, TCSANOW, &old); }
         }
-        termios_guard(const termios_guard &)            = delete;
-        termios_guard &operator=(const termios_guard &) = delete;
+        termios_guard(const termios_guard &) = delete;
+        termios_guard &
+        operator=(const termios_guard &) = delete;
     };
 
-    static constexpr bool write_all(int fd, const char *data, size_t len) noexcept {
+    static constexpr bool
+    write_all(int fd, const char *data, size_t len) noexcept {
         size_t done = 0;
         while (done < len) {
             ssize_t n = ::write(fd, data + done, len - done);
@@ -335,8 +376,8 @@ private:
         return true;
     }
 
-    static constexpr std::expected<std::string, err_terminal> read_reply_from_tty(int ttyFd,
-                                                                                  int timeoutMs = 500) noexcept {
+    static constexpr std::expected<std::string, err_terminal>
+    read_reply_from_tty(int ttyFd, int timeoutMs = 500) noexcept {
         using clock          = std::chrono::steady_clock;
         auto        deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
         std::string buf;
@@ -376,7 +417,8 @@ private:
         return buf;
     }
 
-    static constexpr int open_query_tty_fd() noexcept {
+    static constexpr int
+    open_query_tty_fd() noexcept {
         int ttyFd = ::open("/dev/tty", O_RDWR | O_NOCTTY);
         if (ttyFd >= 0) { return ttyFd; }
         // constexpr std::array<int, 3> candidates{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -391,8 +433,8 @@ private:
         return -1;
     }
 
-    static constexpr std::expected<std::string, err_terminal> send_osc_and_read(const std::string &osc,
-                                                                                int timeoutMs = 500) noexcept {
+    static constexpr std::expected<std::string, err_terminal>
+    send_osc_and_read(const std::string &osc, int timeoutMs = 500) noexcept {
         uniq_fd tty(open_query_tty_fd());
         if (! tty.valid()) { return std::unexpected(err_terminal::NoTerminal); }
         if (! write_all(tty.get(), osc.data(), osc.size())) { return std::unexpected(err_terminal::IoError); }
@@ -403,7 +445,8 @@ private:
 
     // TODO: This is temporarily kept non-constexpr because MSVC is not up to date on constexpr implementation of some
     // stuff this depends on (std::regex_search)
-    static std::expected<inc_sRGB, err_terminal> parse_color_from_reply(std::string reply) noexcept {
+    static std::expected<inc_sRGB, err_terminal>
+    parse_color_from_reply(std::string reply) noexcept {
         while (! reply.empty() && (reply.back() == '\r' || reply.back() == '\n')) { reply.pop_back(); }
 
         static std::regex rx_rgb(R"(rgb:([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4})/([0-9A-Fa-f]{1,4}))");
@@ -430,22 +473,29 @@ private:
         return std::unexpected(err_terminal::ParseError);
     }
 
-    static constexpr std::string make_osc_query(const std::string &body) { return "\033]" + body + '\a'; }
+    static constexpr std::string
+    make_osc_query(const std::string &body) {
+        return "\033]" + body + '\a';
+    }
 
-    static constexpr result_t queryPaletteIndex(int index) noexcept {
+    static constexpr result_t
+    queryPaletteIndex(int index) noexcept {
         if (! index256_valid(index)) { return std::unexpected(err_terminal::Unsupported); }
         return send_osc_and_read(make_osc_query("4;" + std::to_string(index) + ";?")).and_then(parse_color_from_reply);
     }
 
-    static constexpr result_t queryForeground() noexcept {
+    static constexpr result_t
+    queryForeground() noexcept {
         return send_osc_and_read(make_osc_query("10;?")).and_then(parse_color_from_reply);
     }
 
-    static constexpr result_t queryBackground() noexcept {
+    static constexpr result_t
+    queryBackground() noexcept {
         return send_osc_and_read(make_osc_query("11;?")).and_then(parse_color_from_reply);
     }
 
-    static constexpr result_t queryCursorCol() noexcept {
+    static constexpr result_t
+    queryCursorCol() noexcept {
         return send_osc_and_read(make_osc_query("12;?")).and_then(parse_color_from_reply);
     }
 };

@@ -45,7 +45,8 @@ namespace fs = std::filesystem;
 
 // TODO: This is somewhat weird, probably not at all smart to do it this way
 // TODO: At any rate change the interface so that it is using std::expected
-inline std::optional<std::string_view> get_file_textual(std::string_view const &sv) {
+inline std::optional<std::string_view>
+get_file_textual(std::string_view const &sv) {
     static ankerl::unordered_dense::map<std::string, std::string, hashing::XXH3Hasher> storageMP;
     if (auto ele = storageMP.find(std::string(sv)); ele != storageMP.end()) { return std::string_view(ele->second); }
     else {
@@ -61,7 +62,8 @@ inline std::optional<std::string_view> get_file_textual(std::string_view const &
 }
 
 // TODO: At any rate change the interface so that it is using std::expected
-inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view const &sv) {
+inline std::optional<std::vector<std::byte>>
+get_file_bytes(std::string_view const &sv) {
     const auto    path = fs::path(sv);
     std::ifstream ifs(path, std::ios::binary | std::ios::ate);
     if (! ifs.is_open()) { return std::nullopt; }
@@ -88,7 +90,8 @@ inline std::optional<std::vector<std::byte>> get_file_bytes(std::string_view con
 }
 
 
-inline std::expected<fs::path, std::error_code> get_curExeDir() {
+inline std::expected<fs::path, std::error_code>
+get_curExeDir() {
     try {
 #if defined(_WIN32)
         wchar_t     buffer[MAX_PATH];
@@ -143,7 +146,8 @@ struct AccessInfo {
     bool readable;
     bool writable;
 };
-inline std::expected<AccessInfo, std::filesystem::file_type> check_access(const std::filesystem::path &p) {
+inline std::expected<AccessInfo, std::filesystem::file_type>
+check_access(const std::filesystem::path &p) {
     namespace fs = std::filesystem;
     std::error_code ec;
 
@@ -186,15 +190,18 @@ using namespace std::literals;
 
 namespace detail {
 
-inline std::expected<fs::path, std::error_code> no_location() {
+inline std::expected<fs::path, std::error_code>
+no_location() {
     return std::unexpected(std::make_error_code(std::errc::no_such_file_or_directory));
 }
 
-inline std::optional<fs::path> env_path(const std::string &name) {
+inline std::optional<fs::path>
+env_path(const std::string &name) {
     if (const char *raw = std::getenv(name.c_str()); raw != nullptr && *raw != '\0') { return fs::path(raw); }
     return std::nullopt;
 }
-inline std::expected<fs::path, std::error_code> fallback_from_cwd(std::string_view category, bool allowFallback) {
+inline std::expected<fs::path, std::error_code>
+fallback_from_cwd(std::string_view category, bool allowFallback) {
     if (! allowFallback) { return no_location(); }
 
     std::error_code ec;
@@ -206,15 +213,16 @@ inline std::expected<fs::path, std::error_code> fallback_from_cwd(std::string_vi
     return out;
 }
 
-inline std::expected<fs::path, std::error_code> with_app_name(std::expected<fs::path, std::error_code> base,
-                                                              std::string_view                         appName) {
+inline std::expected<fs::path, std::error_code>
+with_app_name(std::expected<fs::path, std::error_code> base, std::string_view appName) {
     if (! base) { return std::unexpected(base.error()); }
     if (appName.empty()) { return std::unexpected(std::make_error_code(std::errc::invalid_argument)); }
     return *base / std::string(appName);
 }
 
-inline std::expected<fs::path, std::error_code> with_app_name_windows_suffix(
-    std::expected<fs::path, std::error_code> base, std::string_view appName, std::string_view windowsSuffix) {
+inline std::expected<fs::path, std::error_code>
+with_app_name_windows_suffix(std::expected<fs::path, std::error_code> base, std::string_view appName,
+                             std::string_view windowsSuffix) {
     if (! base) { return std::unexpected(base.error()); }
     if (appName.empty()) { return std::unexpected(std::make_error_code(std::errc::invalid_argument)); }
 
@@ -228,7 +236,8 @@ inline std::expected<fs::path, std::error_code> with_app_name_windows_suffix(
 }
 
 #if defined(_WIN32)
-inline std::optional<fs::path> known_folder(const KNOWNFOLDERID &id) {
+inline std::optional<fs::path>
+known_folder(const KNOWNFOLDERID &id) {
     PWSTR raw = nullptr;
     if (SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, nullptr, &raw) != S_OK || raw == nullptr) { return std::nullopt; }
 
@@ -240,7 +249,8 @@ inline std::optional<fs::path> known_folder(const KNOWNFOLDERID &id) {
 
 } // namespace detail
 
-inline std::expected<fs::path, std::error_code> roaming_user_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+roaming_user_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     if (const auto base = detail::known_folder(FOLDERID_RoamingAppData); base) { return *base; }
     if (allowFallback) {
@@ -251,11 +261,13 @@ inline std::expected<fs::path, std::error_code> roaming_user_dir(bool allowFallb
     return detail::fallback_from_cwd("roaming", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> roaming_user_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+roaming_user_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(roaming_user_dir(allowFallback), appName);
 }
 
-inline std::expected<fs::path, std::error_code> local_user_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+local_user_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     if (const auto base = detail::known_folder(FOLDERID_LocalAppData); base) { return base.value(); }
     else if (const auto appData = detail::env_path("LOCALAPPDATA"); appData) { return appData.value(); }
@@ -264,11 +276,13 @@ inline std::expected<fs::path, std::error_code> local_user_dir(bool allowFallbac
     return detail::fallback_from_cwd("local", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> local_user_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+local_user_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(local_user_dir(allowFallback), appName);
 }
 
-inline std::expected<fs::path, std::error_code> config_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+config_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return roaming_user_dir(allowFallback);
 #elif defined(__APPLE__)
@@ -282,11 +296,13 @@ inline std::expected<fs::path, std::error_code> config_dir(bool allowFallback = 
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> config_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+config_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(config_dir(allowFallback), appName);
 }
 
-inline std::expected<fs::path, std::error_code> data_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+data_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return local_user_dir(allowFallback);
 #elif defined(__APPLE__)
@@ -300,11 +316,13 @@ inline std::expected<fs::path, std::error_code> data_dir(bool allowFallback = tr
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> data_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+data_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(data_dir(allowFallback), appName);
 }
 
-inline std::expected<fs::path, std::error_code> state_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+state_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return local_user_dir(allowFallback);
 #elif defined(__APPLE__)
@@ -320,11 +338,13 @@ inline std::expected<fs::path, std::error_code> state_dir(bool allowFallback = t
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> state_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+state_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name_windows_suffix(state_dir(allowFallback), appName, "State"sv);
 }
 
-inline std::expected<fs::path, std::error_code> cache_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+cache_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return local_user_dir(allowFallback);
 #elif defined(__APPLE__)
@@ -338,11 +358,13 @@ inline std::expected<fs::path, std::error_code> cache_dir(bool allowFallback = t
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> cache_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+cache_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name_windows_suffix(cache_dir(allowFallback), appName, "Cache"sv);
 }
 
-inline std::expected<fs::path, std::error_code> logs_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+logs_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return local_user_dir(allowFallback);
 #elif defined(__APPLE__)
@@ -355,11 +377,13 @@ inline std::expected<fs::path, std::error_code> logs_dir(bool allowFallback = tr
 #endif
 }
 
-inline std::expected<fs::path, std::error_code> logs_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+logs_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name_windows_suffix(logs_dir(allowFallback), appName, "Logs"sv);
 }
 
-inline std::expected<fs::path, std::error_code> runtime_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+runtime_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     return local_user_dir(allowFallback);
 #elif defined(__linux__)
@@ -374,11 +398,13 @@ inline std::expected<fs::path, std::error_code> runtime_dir(bool allowFallback =
     return detail::fallback_from_cwd("runtime", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> runtime_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+runtime_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name_windows_suffix(runtime_dir(allowFallback), appName, "Runtime"sv);
 }
 
-inline std::expected<fs::path, std::error_code> temp_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+temp_dir(bool allowFallback = true) {
     std::error_code ec;
     const fs::path  tmpRoot = fs::temp_directory_path(ec);
     if (! ec) { return tmpRoot; }
@@ -386,11 +412,13 @@ inline std::expected<fs::path, std::error_code> temp_dir(bool allowFallback = tr
     return detail::fallback_from_cwd("temp", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> temp_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+temp_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(temp_dir(allowFallback), appName);
 }
 
-inline std::expected<fs::path, std::error_code> machine_data_dir(bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+machine_data_dir(bool allowFallback = true) {
 #if defined(_WIN32)
     if (const auto base = detail::known_folder(FOLDERID_ProgramData); base) { return *base; }
     if (allowFallback) {
@@ -405,7 +433,8 @@ inline std::expected<fs::path, std::error_code> machine_data_dir(bool allowFallb
     return detail::fallback_from_cwd("program-data", allowFallback);
 }
 
-inline std::expected<fs::path, std::error_code> machine_data_dir(std::string_view appName, bool allowFallback = true) {
+inline std::expected<fs::path, std::error_code>
+machine_data_dir(std::string_view appName, bool allowFallback = true) {
     return detail::with_app_name(machine_data_dir(allowFallback), appName);
 }
 } // namespace locations
@@ -415,7 +444,8 @@ inline std::expected<fs::path, std::error_code> machine_data_dir(std::string_vie
 // 1) Next to executable running this code
 // 2) appName_CONFIG_DIR env variable directory
 // 3) Default directory expected for a particular system (Linux, MacOS, Windows)
-inline std::expected<fs::path, std::error_code> find_configFile(const std::string &appName, const std::string &file) {
+inline std::expected<fs::path, std::error_code>
+find_configFile(const std::string &appName, const std::string &file) {
     auto exeDir = get_curExeDir();
     if (! exeDir) { return std::unexpected(exeDir.error()); }
 
