@@ -77,7 +77,7 @@ public:
     [[nodiscard]] constexpr auto
     operator*() const -> reference {
         auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> reference {
-            return std::tie((*((iters[Is])))...);
+            return std::tie(*iters[Is]...);
         };
         return lam(idxSeq);
     }
