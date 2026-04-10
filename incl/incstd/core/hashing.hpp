@@ -15,7 +15,7 @@ concept has_to_ullong = requires(T a) {
     { a.to_ullong() } -> std::same_as<unsigned long long>;
 };
 template <typename T>
-concept has_XXH3Hash_byADL = requires(T const &v, XXH3_state_t *s) {
+concept has_XXH3Hash_byADL = requires(T v, XXH3_state_t *s) {
     { XXH3Hash(v, s) } -> std::same_as<void>;
 };
 } // namespace detail
@@ -25,14 +25,14 @@ struct XXH3Hasher {
     template <typename T>
     requires std::is_arithmetic_v<std::decay_t<T>>
     constexpr std::size_t
-    operator()(T &&input) const {
+    operator()(T const &input) const {
         return XXH3_64bits(&input, sizeof(T));
     }
     template <typename T>
     requires more_concepts::random_access_container<std::remove_cvref_t<T>> &&
              std::is_arithmetic_v<typename T::value_type>
     constexpr std::size_t
-    operator()(T &&input) const {
+    operator()(T const &input) const {
         return XXH3_64bits(input.data(),
                            sizeof(typename std::remove_cvref_t<decltype(input)>::value_type) * input.size());
     }
@@ -40,15 +40,15 @@ struct XXH3Hasher {
     template <typename T>
     requires detail::has_to_ullong<T>
     constexpr std::size_t
-    operator()(T const &&input) const {
+    operator()(T const &input) const {
         return (*this)(input.to_ullong());
     }
 
     // ADL HASHING FUNCTION PROVIDED BY THE USER
     template <typename T>
-    requires detail::has_XXH3Hash_byADL<T>
+    requires detail::has_XXH3Hash_byADL<std::remove_cvref_t<T>>
     constexpr std::size_t
-    operator()(T const &&input) const {
+    operator()(T const &input) const {
         XXH3_state_t *state = XXH3_createState();
         XXH3_64bits_reset(state);
         XXH3Hash(input, state);
@@ -61,7 +61,7 @@ struct XXH3Hasher {
     // REQUIRES GRADUAL BUILDUP OF XXH3_STATE OUT OF DIS-CONTIGUOUS DATA INSIDE THE INPUT TYPE
     template <typename T>
     constexpr std::size_t
-    operator()(T &&input) const {
+    operator()(T const &input) const {
         XXH3_state_t *state = XXH3_createState();
         XXH3_64bits_reset(state);
         this->_hashTypeX(input, state);
