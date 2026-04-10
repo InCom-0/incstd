@@ -14,6 +14,10 @@ template <typename T>
 concept has_to_ullong = requires(T a) {
     { a.to_ullong() } -> std::same_as<unsigned long long>;
 };
+template <typename T>
+concept has_XXH3Hash_byADL = requires(T const &v, XXH3_state_t *s) {
+    { XXH3Hash(v, s) } -> std::same_as<void>;
+};
 } // namespace detail
 
 struct XXH3Hasher {
@@ -38,6 +42,20 @@ struct XXH3Hasher {
     constexpr std::size_t
     operator()(T const &&input) const {
         return (*this)(input.to_ullong());
+    }
+
+    // ADL HASHING FUNCTION PROVIDED BY THE USER
+    template <typename T>
+    requires detail::has_XXH3Hash_byADL<T>
+    constexpr std::size_t
+    operator()(T const &&input) const {
+        XXH3_state_t *state = XXH3_createState();
+        XXH3_64bits_reset(state);
+        XXH3Hash(input, state);
+
+        XXH64_hash_t result = XXH3_64bits_digest(state);
+        XXH3_freeState(state);
+        return result;
     }
 
     // REQUIRES GRADUAL BUILDUP OF XXH3_STATE OUT OF DIS-CONTIGUOUS DATA INSIDE THE INPUT TYPE
