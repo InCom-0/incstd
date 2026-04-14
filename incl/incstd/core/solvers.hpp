@@ -108,6 +108,38 @@ public:
         }
         Shape(std::array<std::array<bool, SQSZ>, SQSZ> const &src) : m_matrix(src) {}
 
+        int
+        is_emptyOrFilled() {
+            size_t count = 0uz;
+            for (int r = 0; r < SQSZ; ++r) {
+                for (int c = 0; c < SQSZ; ++c) { count += m_matrix[r][c++]; }
+                r++;
+            }
+            if (count == 0) { return -1; }
+            else if (count == (SQSZ * SQSZ)) { return 1; }
+            return 0;
+        }
+
+        size_t
+        count_filled() {
+            size_t count = 0uz;
+            for (int r = 0; r < SQSZ; ++r) {
+                for (int c = 0; c < SQSZ; ++c) { count += m_matrix[r][c++]; }
+                r++;
+            }
+            return count;
+        }
+
+        size_t
+        count_filledBorderLess() {
+            size_t count = 0uz;
+            for (int r = 1; r < (SQSZ - 1); ++r) {
+                for (int c = 1; c < (SQSZ - 1); ++c) { count += m_matrix[r][c++]; }
+                r++;
+            }
+            return count;
+        }
+
         OverlayRes
         compute_overlayWith(Shape const &other) const {
             OverlayRes res{{}, 0uz, 0uz, 0uz};
@@ -190,6 +222,7 @@ private:
     Pos                            m_firstTilePos;
 
     std::vector<std::vector<Shape_t>> m_shapes_alterns;
+    size_t                            m_shapesMaxOccupied;
     std::vector<size_t>               m_useableCount_perShape;
     std::vector<double>               m_shapesRatios_orig;
     FastPseudoRandom                  m_fprng;
@@ -240,22 +273,33 @@ private:
 
     std::tuple<Shape_t &, std::vector<PastRes_t> &>
     compute_possibsFor(Shape_t const &tile) {
-        std::vector<PastRes_t> resToMap;
-        auto allowed = [](PastRes_t const &toCheck) -> bool { return (toCheck.second.pointsOverlaid == 0uz); };
+        auto insRes = m_pastComputed.insert({tile, std::vector<PastRes_t>{}});
+        if (insRes.second) {
+            auto               &vpr = insRes.first->second;
+            std::vector<double> lastSORs(m_shapes_alterns.size(), std::numeric_limits<double>::max());
 
-        for (long long shpID = 0; shpID < m_shapes_alterns.size(); ++shpID) {
-            for (long long alternID = 0; alternID < m_shapes_alterns.at(shpID).size(); ++alternID) {
-                auto rs =
-                    PastRes_t{Pos{shpID, alternID}, tile.compute_overlayWith(m_shapes_alterns.at(shpID).at(alternID))};
-                if (allowed(rs)) { resToMap.push_back(rs); }
+            auto allowed = [&](PastRes_t const &toCheck) -> bool {
+                if (lastSORs.at(toCheck.first.y) >= toCheck.second.surfaceOpened_relative &&
+                    toCheck.second.pointsOverlaid == 0uz) {
+                    lastSORs.at(toCheck.first.y) = toCheck.second.surfaceOpened_relative;
+                    return true;
+                }
+                else { return false; }
+            };
+
+            for (long long shpID = 0; shpID < m_shapes_alterns.size(); ++shpID) {
+                for (long long alternID = 0; alternID < m_shapes_alterns.at(shpID).size(); ++alternID) {
+                    auto rs = PastRes_t{Pos{shpID, alternID},
+                                        tile.compute_overlayWith(m_shapes_alterns.at(shpID).at(alternID))};
+                    if (allowed(rs)) { vpr.push_back(rs); }
+                }
             }
+            std::ranges::sort(vpr, [](auto const &l, auto const &r) -> bool {
+                double const soDif = r.second.surfaceOpened_relative - l.second.surfaceOpened_relative;
+                if (soDif == 0.0) { return l.second.pointsAdded > r.second.pointsAdded; }
+                else { return std::abs(soDif) + soDif; }
+            });
         }
-        std::ranges::sort(resToMap, [](auto const &l, auto const &r) -> bool {
-            double const soDif = r.second.surfaceOpened_relative - l.second.surfaceOpened_relative;
-            if (soDif == 0.0) { return l.second.pointsAdded > r.second.pointsAdded; }
-            else { return std::abs(soDif) + soDif; }
-        });
-        auto insRes = m_pastComputed.insert({tile, resToMap});
         return std::tie(insRes.first->first, insRes.first->second);
     }
 
@@ -288,24 +332,21 @@ private:
         return res;
     }
 
-    std::expected<Shape_t, int>
+    std::optional<Shape_t>
     get_windowAtPos(Pos const &shapePos) {
         size_t const rows = m_area.size();
         size_t const cols = m_area.size() > 0 ? m_area.front().size() : 0;
 
-        std::expected<Shape_t, int> res{std::unexpected(0)};
-
         if (shapePos.y >= 0 && shapePos.y <= (rows - SQSZ) && shapePos.x >= 0 && shapePos.x <= (cols - SQSZ)) {
-            res             = Shape_t{};
-            Shape_t &shpRes = res.value();
-
+            Shape_t res;
             for (int row = shapePos.y; row < shapePos.y + SQSZ; ++row) {
                 for (int col = shapePos.x; col < (shapePos.x + SQSZ); ++col) {
-                    shpRes.m_matrix[row - shapePos.y][col - shapePos.x] = m_area[row][col];
+                    res.m_matrix[row - shapePos.y][col - shapePos.x] = m_area[row][col];
                 }
             }
+            return res;
         }
-        return res;
+        else { return std::nullopt; }
     }
 
     bool
@@ -348,7 +389,7 @@ private:
         size_t resCount = 0uz;
         for (auto const &onePos : shapePoss) {
             auto window = get_windowAtPos(onePos);
-            if (not window.has_value()) { continue; }
+            if (not window.has_value() || window.value().count_filledBorderLess() > m_shapesMaxOccupied) { continue; }
 
             auto possibsForWindow = getOrCompute_possibsFor(window.value());
             if (std::get<1>(possibsForWindow).size() > 0) {
@@ -377,19 +418,20 @@ private:
 
 public:
     // Construction
-    BoxPacker_2D()                  = delete;
+    BoxPacker_2D()                        = delete;
     BoxPacker_2D(BoxPacker_2D const &src) = default;
     BoxPacker_2D(BoxPacker_2D &&src)      = default;
-    ~BoxPacker_2D()                 = default;
+    ~BoxPacker_2D()                       = default;
 
     BoxPacker_2D &
     operator=(BoxPacker_2D const &) = default;
     BoxPacker_2D &
     operator=(BoxPacker_2D &&) = default;
 
-    BoxPacker_2D(size_t const area_ySize, size_t const area_xSize, std::vector<std::vector<Shape_t>> const &shps_alterns,
-           std::vector<size_t> const &shps_counts, size_t const firstTile_yPos = 0uz, size_t const firstTile_xPos = 0uz,
-           pastResMap_t const &pastReslts = {})
+    BoxPacker_2D(size_t const area_ySize, size_t const area_xSize,
+                 std::vector<std::vector<Shape_t>> const &shps_alterns, std::vector<size_t> const &shps_counts,
+                 size_t const firstTile_yPos = 0uz, size_t const firstTile_xPos = 0uz,
+                 pastResMap_t const &pastReslts = {})
         : m_useableCount_perShape(shps_counts),
           m_area(std::vector(area_ySize + 2, std::vector<char>(area_xSize + 2, 0))),
           m_firstTilePos(Pos{.y = static_cast<long long>(firstTile_yPos), .x = static_cast<long long>(firstTile_xPos)}),
@@ -411,6 +453,13 @@ public:
 
         m_shapesRatios_orig = decltype(m_shapesRatios_orig)(ratiosHlprView.begin(), ratiosHlprView.end());
 
+        m_shapesMaxOccupied =
+            std::ranges::fold_left_first(
+                std::views::transform(m_shapes_alterns,
+                                      [](auto &vecOfAlterns) { return vecOfAlterns.front().count_filledBorderLess(); }),
+                [](size_t a, size_t b) { return std::max(a, b); })
+                .value_or(0uz);
+
         auto const ftPos     = Pos{.y = static_cast<long long>(std::min(firstTile_yPos, area_ySize - SQSZ)),
                                    .x = static_cast<long long>(std::min(firstTile_xPos, area_xSize - SQSZ))};
         auto       firstTile = get_windowAtPos(ftPos).value();
@@ -419,14 +468,14 @@ public:
     }
 
     BoxPacker_2D(size_t const &area_ySize, size_t const &area_xSize,
-           std::vector<std::array<std::array<bool, SQSZ - 2>, SQSZ - 2>> const &shps,
-           std::vector<size_t> const &shps_counts, size_t const firstTile_yPos = 0uz, size_t const firstTile_xPos = 0uz,
-           pastResMap_t const &pastReslts = {})
+                 std::vector<std::array<std::array<bool, SQSZ - 2>, SQSZ - 2>> const &shps,
+                 std::vector<size_t> const &shps_counts, size_t const firstTile_yPos = 0uz,
+                 size_t const firstTile_xPos = 0uz, pastResMap_t const &pastReslts = {})
         : BoxPacker_2D(area_ySize, area_xSize,
-                 std::views::transform(
-                     shps, [](auto const &smallerShp) { return Shape_t(smallerShp).compute_alternsRotFlip(); }) |
-                     std::ranges::to<std::vector>(),
-                 shps_counts, firstTile_yPos, firstTile_xPos, pastReslts) {}
+                       std::views::transform(
+                           shps, [](auto const &smallerShp) { return Shape_t(smallerShp).compute_alternsRotFlip(); }) |
+                           std::ranges::to<std::vector>(),
+                       shps_counts, firstTile_yPos, firstTile_xPos, pastReslts) {}
 
     // 'Primes' random number generator used by the solver instance with a seed based on hash of the solver state
     // Returns the the seed it used
@@ -459,12 +508,13 @@ public:
 
     BoxPacker_2D
     clone_keepShapeData(std::vector<size_t> const &shps_counts) {
-        return BoxPacker_2D(m_area.size(), m_area.size() > 0 ? m_area.front().size() : 0uz, m_shapes_alterns, shps_counts,
-                      m_firstTilePos.y, m_firstTilePos.x, m_pastComputed);
+        return BoxPacker_2D(m_area.size(), m_area.size() > 0 ? m_area.front().size() : 0uz, m_shapes_alterns,
+                            shps_counts, m_firstTilePos.y, m_firstTilePos.x, m_pastComputed);
     }
     BoxPacker_2D
     clone_keepShapeData(size_t const area_ySize, size_t const area_xSize, std::vector<size_t> const &shps_counts) {
-        return BoxPacker_2D(area_ySize, area_xSize, m_shapes_alterns, shps_counts, m_firstTilePos.y, m_firstTilePos.x, {});
+        return BoxPacker_2D(area_ySize, area_xSize, m_shapes_alterns, shps_counts, m_firstTilePos.y, m_firstTilePos.x,
+                            {});
     }
 
     void
