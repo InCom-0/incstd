@@ -263,46 +263,6 @@ private:
         return result;
     }
 
-    std::optional<std::tuple<Shape_t &, std::vector<PastRes_t> &>>
-    get_possibsFor(Shape_t const &tile) {
-        if (auto found = m_pastComputed.find(tile); found != m_pastComputed.end()) {
-            return std::tie(found->first, found->second);
-        }
-        return std::nullopt;
-    }
-
-    std::tuple<Shape_t &, std::vector<PastRes_t> &>
-    compute_possibsFor(Shape_t const &tile) {
-        auto insRes = m_pastComputed.insert({tile, std::vector<PastRes_t>{}});
-        if (insRes.second) {
-            auto               &vpr = insRes.first->second;
-            std::vector<double> lastSORs(m_shapes_alterns.size(), std::numeric_limits<double>::max());
-
-            auto allowed = [&](PastRes_t const &toCheck) -> bool {
-                if (lastSORs.at(toCheck.first.y) >= toCheck.second.surfaceOpened_relative &&
-                    toCheck.second.pointsOverlaid == 0uz) {
-                    lastSORs.at(toCheck.first.y) = toCheck.second.surfaceOpened_relative;
-                    return true;
-                }
-                else { return false; }
-            };
-
-            for (long long shpID = 0; shpID < m_shapes_alterns.size(); ++shpID) {
-                for (long long alternID = 0; alternID < m_shapes_alterns.at(shpID).size(); ++alternID) {
-                    auto rs = PastRes_t{Pos{shpID, alternID},
-                                        tile.compute_overlayWith(m_shapes_alterns.at(shpID).at(alternID))};
-                    if (allowed(rs)) { vpr.push_back(rs); }
-                }
-            }
-            std::ranges::sort(vpr, [](auto const &l, auto const &r) -> bool {
-                double const soDif = r.second.surfaceOpened_relative - l.second.surfaceOpened_relative;
-                if (soDif == 0.0) { return l.second.pointsAdded > r.second.pointsAdded; }
-                else { return std::abs(soDif) + soDif; }
-            });
-        }
-        return std::tie(insRes.first->first, insRes.first->second);
-    }
-
     std::vector<Pos>
     get_surrOverlappingPoss(Pos const &shapePos) {
         std::vector<Pos> res;
@@ -587,8 +547,34 @@ public:
 
     std::tuple<Shape_t &, std::vector<PastRes_t> &>
     getOrCompute_possibsFor(Shape_t const &tile) {
-        if (auto comp = get_possibsFor(tile); comp.has_value()) { return comp.value(); }
-        return compute_possibsFor(tile);
+        auto insRes = m_pastComputed.insert({tile, std::vector<PastRes_t>{}});
+        if (insRes.second) {
+            auto               &vpr = insRes.first->second;
+            std::vector<double> lastSORs(m_shapes_alterns.size(), std::numeric_limits<double>::max());
+
+            auto allowed = [&](PastRes_t const &toCheck) -> bool {
+                if (lastSORs.at(toCheck.first.y) >= toCheck.second.surfaceOpened_relative &&
+                    toCheck.second.pointsOverlaid == 0uz) {
+                    lastSORs.at(toCheck.first.y) = toCheck.second.surfaceOpened_relative;
+                    return true;
+                }
+                else { return false; }
+            };
+
+            for (long long shpID = 0; shpID < m_shapes_alterns.size(); ++shpID) {
+                for (long long alternID = 0; alternID < m_shapes_alterns.at(shpID).size(); ++alternID) {
+                    auto rs = PastRes_t{Pos{shpID, alternID},
+                                        tile.compute_overlayWith(m_shapes_alterns.at(shpID).at(alternID))};
+                    if (allowed(rs)) { vpr.push_back(rs); }
+                }
+            }
+            std::ranges::sort(vpr, [](auto const &l, auto const &r) -> bool {
+                double const soDif = r.second.surfaceOpened_relative - l.second.surfaceOpened_relative;
+                if (soDif == 0.0) { return l.second.pointsAdded > r.second.pointsAdded; }
+                else { return std::abs(soDif) + soDif; }
+            });
+        }
+        return std::tie(insRes.first->first, insRes.first->second);
     }
 
     std::string
