@@ -85,5 +85,10 @@ main(int argc, char *argv[]) {
     //     << is_specialization_of<std::expected<volatile const size_t &, std::error_code>, std::expected> << '\n';
 
 
+    namespace locpack = incom::standard::solvers::packing;
+    locpack::BoxPacker_2D solv_1(20, 40, std::vector<std::array<std::array<bool, 3>, 3>>{}, {});
+    solv_1.solve_oneStep();
+
+
     return 1;
 }
