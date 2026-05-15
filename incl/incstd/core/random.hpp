@@ -3,12 +3,12 @@
 #include <cstdint>
 #include <limits>
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER) && ! defined(__clang__)
 #include <intrin.h>
 #endif
 
 namespace incom::standard::random {
-    
+
 struct FastPseudoRandom {
     std::uint64_t m_state = 0x9e3779b97f4a7c15ull;
 
@@ -31,10 +31,8 @@ struct FastPseudoRandom {
 
     [[nodiscard]] static std::uint64_t
     multiplyHigh64(std::uint64_t lhs, std::uint64_t rhs) noexcept {
-#if defined(_MSC_VER) && !defined(__clang__)
-        std::uint64_t high = 0;
-        _umul128(lhs, rhs, &high);
-        return high;
+#if defined(_MSC_VER) && ! defined(__clang__)
+        return __umulh(lhs, rhs);
 #else
         return static_cast<std::uint64_t>((static_cast<unsigned __int128>(lhs) * rhs) >> 64);
 #endif
@@ -46,19 +44,19 @@ struct FastPseudoRandom {
             return static_cast<std::size_t>(nextRandomWord());
         }
 
-        auto const bound = static_cast<std::uint64_t>(maxInclusive) + 1ull;
+        auto const bound     = static_cast<std::uint64_t>(maxInclusive) + 1ull;
         auto const threshold = (0ull - bound) % bound;
 
         for (;;) {
             auto const randomWord = nextRandomWord();
 
-#if defined(_MSC_VER) && !defined(__clang__)
-            std::uint64_t high = 0;
-            auto const low = _umul128(randomWord, bound, &high);
+#if defined(_MSC_VER) && ! defined(__clang__)
+            auto const low  = randomWord * bound;
+            auto const high = __umulh(randomWord, bound);
 #else
             auto const product = static_cast<unsigned __int128>(randomWord) * bound;
-            auto const low = static_cast<std::uint64_t>(product);
-            auto const high = static_cast<std::uint64_t>(product >> 64);
+            auto const low     = static_cast<std::uint64_t>(product);
+            auto const high    = static_cast<std::uint64_t>(product >> 64);
 #endif
 
             if (low >= threshold) { return static_cast<std::size_t>(high); }

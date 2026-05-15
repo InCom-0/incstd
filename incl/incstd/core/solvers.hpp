@@ -22,49 +22,6 @@ using namespace incom::standard;
 
 
 namespace packing {
-namespace {
-struct FastPseudoRandom {
-    uint64_t m_state = 0x9e3779b97f4a7c15ull;
-
-    FastPseudoRandom() = default;
-
-    explicit FastPseudoRandom(uint64_t seed) { setSeed(seed); }
-
-    void
-    setSeed(uint64_t seed) {
-        m_state = seed;
-        if (m_state == 0ull) { m_state = 0x9e3779b97f4a7c15ull; }
-    }
-
-    uint64_t
-    nextRandomWord() {
-        uint64_t z = (m_state += 0x9e3779b97f4a7c15ull);
-        z          = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
-        z          = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
-        return z ^ (z >> 31);
-    }
-
-    static uint64_t
-    multiplyHigh64(uint64_t lhs, uint64_t rhs) {
-#if defined(_MSC_VER) && ! defined(__clang__)
-        uint64_t high = 0;
-        _umul128(lhs, rhs, &high);
-        return high;
-#else
-        return static_cast<uint64_t>((static_cast<unsigned __int128>(lhs) * rhs) >> 64);
-#endif
-    }
-
-    size_t
-    pseudoRandom_0_to(size_t maxInclusive) {
-        if (maxInclusive == std::numeric_limits<size_t>::max()) { return static_cast<size_t>(nextRandomWord()); }
-
-        auto const bound = static_cast<uint64_t>(maxInclusive) + 1ull;
-        return static_cast<size_t>(multiplyHigh64(nextRandomWord(), bound));
-    }
-};
-} // namespace
-
 
 template <size_t SQSZ>
 requires(SQSZ > 2)
