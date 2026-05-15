@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <deque>
-#include <mdspan>
 #include <vector>
+#include <mspan/mdspan>
 
 
 namespace incom::standard::explorers {
