@@ -461,15 +461,21 @@ private:
           m_firstTilePos(Pos{.y = static_cast<long long>(firstTile_yPos), .x = static_cast<long long>(firstTile_xPos)}),
           m_shapes_alterns(shps_alterns),
           m_shapesMaxEmpty(((SQSZ - 2) * (SQSZ - 2)) -
-                           std::ranges::fold_left_first(
-                               std::views::transform(m_shapes_alterns,
-                                                     [](auto &vecOfAlterns) {
-                                                         return vecOfAlterns.empty()
-                                                                    ? 0
-                                                                    : vecOfAlterns.front().count_filledBorderLess();
-                                                     }),
-                               [](size_t a, size_t b) { return std::min(a, b); })
-                               .value_or(0uz)),
+                           [&] {
+                               auto filledCounts = std::views::transform(m_shapes_alterns, [](auto &vecOfAlterns) {
+                                   return vecOfAlterns.empty() ? 0uz : vecOfAlterns.front().count_filledBorderLess();
+                               });
+
+                               auto first      = std::ranges::begin(filledCounts);
+                               auto const last = std::ranges::end(filledCounts);
+                               if (first == last) { return 0uz; }
+
+                               size_t minFilled = *first;
+                               ++first;
+                               return std::ranges::fold_left(
+                                   std::ranges::subrange(first, last), minFilled,
+                                   [](size_t a, size_t b) { return std::min(a, b); });
+                           }()),
           m_pastComputed(pastReslts) {
 
         std::ranges::fill(m_area.front(), 1);
@@ -485,7 +491,7 @@ private:
         auto ratiosHlprView = std::views::transform(
             m_useableCount_perShape,
             [sum = static_cast<double>(
-                 std::ranges::fold_left_first(m_useableCount_perShape, std::plus{}).value_or(nextafter(0.0, 1.0)))](
+                 std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}))](
                 size_t oneCount) { return oneCount / sum; });
 
         m_shapesRatios_orig = decltype(m_shapesRatios_orig)(ratiosHlprView.begin(), ratiosHlprView.end());
@@ -560,7 +566,7 @@ public:
 
     size_t
     get_useableShapeCountRemaining() const noexcept {
-        return std::ranges::fold_left_first(m_useableCount_perShape, std::plus()).value_or(0uz);
+        return std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{});
     }
     size_t
     get_pastResSize() const noexcept {
@@ -756,7 +762,7 @@ private:
     std::vector<double>
     compute_perShapeScoringAdjustments() const {
         double const sum =
-            static_cast<double>(std::ranges::fold_left_first(m_useableCount_perShape, std::plus{}).value_or(0));
+            static_cast<double>(std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}));
 
         auto ratiosHlprView = std::views::zip(m_useableCount_perShape, m_shapesRatios_orig) |
                               std::views::transform([&](auto const &oneCount) {

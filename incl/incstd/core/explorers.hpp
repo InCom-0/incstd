@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include <deque>
-#include <vector>
 #include <mspan/mdspan>
+#include <vector>
+
 
 
 namespace incom::standard::explorers {
@@ -138,7 +139,7 @@ public:
 private:
     static size_t
     _ctor_total_sz(Pos_t const &sizes) {
-        return std::ranges::fold_left_first(sizes, std::multiplies{}).value_or(0uz);
+        return std::ranges::fold_left(sizes, 1uz, std::multiplies{});
     }
 
     static Extents
