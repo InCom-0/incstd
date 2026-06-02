@@ -55,5 +55,5 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
-    URI "gh:martinus/unordered_dense@4.5.0"
+    URI "gh:martinus/unordered_dense@4.8.1"
     NAME unordered_dense)
