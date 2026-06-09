@@ -395,6 +395,21 @@ public:
                            std::ranges::to<std::vector>(),
                        shps_counts, firstTile_yPos, firstTile_xPos, pastReslts) {}
 
+    BoxPacker_2D(size_t area_ySize, size_t area_xSize,
+                 std::vector<std::vector<std::array<std::array<bool, SQSZ - 2>, SQSZ - 2>>> const &shpsAltrs,
+                 std::vector<size_t> const &shps_counts, size_t const firstTile_yPos = 0uz,
+                 size_t const firstTile_xPos = 0uz, pastResMap_t const &pastReslts = {})
+        : BoxPacker_2D(area_ySize, area_xSize,
+                       std::views::transform(shpsAltrs,
+                                             [](auto const &oneShpAltrns) {
+                                                 return std::views::transform(
+                                                            oneShpAltrns,
+                                                            [](auto const &item) { return Shape(item); }) |
+                                                        std::ranges::to<std::vector>();
+                                             }) |
+                           std::ranges::to<std::vector>(),
+                       shps_counts, firstTile_yPos, firstTile_xPos, pastReslts) {}
+
     //    1. NOT default constructible (makes no sense to do that)
     //    2. NOT copiable (or copy assignable) because some member vars point to other member vars
     BoxPacker_2D()                        = delete;
@@ -423,15 +438,14 @@ private:
                                    return vecOfAlterns.empty() ? 0uz : vecOfAlterns.front().count_filledBorderLess();
                                });
 
-                               auto first      = std::ranges::begin(filledCounts);
-                               auto const last = std::ranges::end(filledCounts);
+                               auto       first = std::ranges::begin(filledCounts);
+                               auto const last  = std::ranges::end(filledCounts);
                                if (first == last) { return 0uz; }
 
                                size_t minFilled = *first;
                                ++first;
-                               return std::ranges::fold_left(
-                                   std::ranges::subrange(first, last), minFilled,
-                                   [](size_t a, size_t b) { return std::min(a, b); });
+                               return std::ranges::fold_left(std::ranges::subrange(first, last), minFilled,
+                                                             [](size_t a, size_t b) { return std::min(a, b); });
                            }()),
           m_pastComputed(pastReslts) {
 
@@ -447,8 +461,7 @@ private:
 
         auto ratiosHlprView = std::views::transform(
             m_useableCount_perShape,
-            [sum = static_cast<double>(
-                 std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}))](
+            [sum = static_cast<double>(std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}))](
                 size_t oneCount) { return oneCount / sum; });
 
         m_shapesRatios_orig = decltype(m_shapesRatios_orig)(ratiosHlprView.begin(), ratiosHlprView.end());
@@ -718,8 +731,7 @@ private:
 
     std::vector<double>
     compute_perShapeScoringAdjustments() const {
-        double const sum =
-            static_cast<double>(std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}));
+        double const sum = static_cast<double>(std::ranges::fold_left(m_useableCount_perShape, 0uz, std::plus{}));
 
         auto ratiosHlprView = std::views::zip(m_useableCount_perShape, m_shapesRatios_orig) |
                               std::views::transform([&](auto const &oneCount) {
@@ -1093,6 +1105,30 @@ private:
         XXH64_hash_t result = XXH3_64bits_digest(state);
         XXH3_freeState(state);
         return result;
+    }
+
+
+public:
+    static std::vector<std::array<std::array<bool, SQSZ - 2>, SQSZ - 2>>
+    calculate_rotFlipped(std::array<std::array<bool, SQSZ - 2>, SQSZ - 2> input) {
+        namespace incmatrix = incom::standard::matrix;
+
+        ankerl::unordered_dense::set<decltype(input), standard::hashing::XXH3Hasher> hlprMP;
+        hlprMP.insert(input);
+        for (int rot_i = 0; rot_i < 3; ++rot_i) {
+            incmatrix::matrixRotateLeft(input);
+            hlprMP.insert(input);
+        }
+
+        // Flip vertically
+        for (size_t i = 0uz; i < (input.size() / 2); ++i) { std::swap(input.at(i), input.at(input.size() - 1 - i)); }
+
+        hlprMP.insert(input);
+        for (int rot_i = 0; rot_i < 3; ++rot_i) {
+            incmatrix::matrixRotateLeft(input);
+            hlprMP.insert(input);
+        }
+        return std::vector<decltype(input)>(hlprMP.begin(), hlprMP.end());
     }
 };
 
