@@ -44,7 +44,7 @@ target_compile_features(incstd INTERFACE cxx_std_23)
 ##########################################################################
 include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
-target_compile_definitions(incstd INTERFACE INCSTD_USE_BUNDLED_MDSPAN=${INCSTD_USE_BUNDLED_MDSPAN})
+target_compile_definitions(incstd INTERFACE INCSTD_USE_BUNDLED_MDSPAN=${INCSTD_USE_BUNDLED_MDSPAN} INCSTD_USE_BUNDLED_SUBMDSPAN=${INCSTD_USE_BUNDLED_SUBMDSPAN})
 
 target_link_libraries(
   incstd

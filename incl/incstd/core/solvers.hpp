@@ -5,7 +5,6 @@
 #include <deque>
 #include <format>
 #include <limits>
-#include <mspan/mdspan>
 #include <ranges>
 
 
@@ -15,6 +14,7 @@
 #include <incstd/core/hashing.hpp>
 #include <incstd/core/matrix.hpp>
 #include <incstd/core/random.hpp>
+#include <incstd/polyfills/mdspan.hpp>
 
 
 namespace incom::standard::solvers {
@@ -26,6 +26,22 @@ namespace packing {
 template <size_t SQSZ>
 requires(SQSZ > 2)
 class BoxPacker_2D {
+
+#if defined(INCSTD_MDSPAN_UNDER_KOKKOS)
+    template <class IndexType, size_t Rank>
+    using pf_dextents = Kokkos::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents>
+    using pf_mdspan = Kokkos::mdspan<ElementType, Extents>;
+#else
+    template <class IndexType, size_t Rank>
+    using pf_dextents = std::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents>
+    using pf_mdspan = std::mdspan<ElementType, Extents>;
+#endif
+
+
 public:
     // inline static constexpr size_t insideBlockRings = SQSZ-2
 
@@ -770,8 +786,8 @@ private:
         if (m_uncoverableFrontierPoss.empty()) { return std::nullopt; }
 
         std::vector<char> tracker(m_frontierTiles.size() * m_frontierTiles.front().size(), 0);
-        std::mdspan       mdsp(tracker.data(),
-                               std::dextents<size_t, 2uz>{m_frontierTiles.size(), m_frontierTiles.front().size()});
+        pf_mdspan         mdsp(tracker.data(),
+                               pf_dextents<size_t, 2uz>{m_frontierTiles.size(), m_frontierTiles.front().size()});
 
         auto const perShpScoringAdj = compute_perShapeScoringAdjustments();
 

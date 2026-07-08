@@ -1,7 +1,0 @@
-#pragma once
-
-#if defined(INCSTD_USE_BUNDLED_MDSPAN) && INCSTD_USE_BUNDLED_MDSPAN
-#include <experimental/mdspan>
-#else
-#include <mdspan>
-#endif

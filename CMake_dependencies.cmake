@@ -1,4 +1,4 @@
-include(cmake/CPM_0.42.1.cmake)
+include(cmake/CPM_0.43.1.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/incom/modules")
 
 include(CMakePushCheckState)
@@ -8,38 +8,65 @@ include(CheckCXXSourceCompiles)
 set(INCSTD_USE_BUNDLED_MDSPAN 0)
 
 cmake_push_check_state(RESET)
-set(CMAKE_REQUIRED_QUIET ON)
+# set(CMAKE_REQUIRED_QUIET ON)
 
-if(DEFINED CMAKE_CXX_EXTENSIONS AND NOT CMAKE_CXX_EXTENSIONS)
-    set(_incstd_mdspan_standard_flag "${CMAKE_CXX23_STANDARD_COMPILE_OPTION}")
+if((DEFINED CMAKE_CXX26_STANDARD_COMPILE_OPTION) OR (DEFINED CMAKE_CXX26_EXTENSION_COMPILE_OPTION))
+    if(NOT CMAKE_CXX_EXTENSIONS)
+        string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX26_STANDARD_COMPILE_OPTION}")
+    else()
+        string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX26_EXTENSION_COMPILE_OPTION}")
+    endif()
 else()
-    set(_incstd_mdspan_standard_flag "${CMAKE_CXX23_EXTENSION_COMPILE_OPTION}")
-endif()
-
-if(_incstd_mdspan_standard_flag)
-    string(APPEND CMAKE_REQUIRED_FLAGS " ${_incstd_mdspan_standard_flag}")
+    if(NOT CMAKE_CXX_EXTENSIONS)
+        string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX23_STANDARD_COMPILE_OPTION}")
+    else()
+        string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX23_EXTENSION_COMPILE_OPTION}")
+    endif()
 endif()
 
 check_cxx_source_compiles(
     [[
-        #include <cstddef>
+        #include <vector>
         #include <mdspan>
-
         int main() {
-                std::mdspan<int, std::dextents<std::size_t, 1>> view(nullptr, 0);
+                std::vector<int> matrix;
+                std::mdspan<int, std::dextents<std::size_t, 2>> view(matrix.data(), 3, 3);
                 return static_cast<int>(view.rank());
         }
     ]]
-    INCSTD_HAS_STD_MDSPAN)
+    INCSTD_STDLIB_HAS_MDSPAN)
+
+check_cxx_source_compiles(
+    [[
+        #include <mdspan>
+        #include <vector>
+
+        int main() {
+                std::vector<int> matrix;
+                std::mdspan<int, std::dextents<std::size_t, 2>> view(matrix.data(), 3, 3);
+                auto inner = std::submdspan(view, std::pair{1, 1}, std::pair{2, 2});
+                
+                return static_cast<int>(inner.rank());
+        }
+    ]]
+    INCSTD_STDLIB_HAS_SUBMDSPAN)
 
 cmake_pop_check_state()
 
-if(INCSTD_HAS_STD_MDSPAN)
-    message(STATUS "incstd: detected standard <mdspan> support")
+set(INCSTD_USE_BUNDLED_MDSPAN 0)
+set(INCSTD_USE_BUNDLED_SUBMDSPAN 0)
+if(NOT INCSTD_STDLIB_HAS_MDSPAN AND NOT INCSTD_STDLIB_HAS_SUBMDSPAN)
+    message(STATUS "incstd: detected standard <mdspan> with 'std::submdspan' support")
 else()
-    message(STATUS "incstd: standard <mdspan> is unavailable; using bundled mdspan fallback")
+    if(INCSTD_STDLIB_HAS_MDSPAN AND NOT INCSTD_STDLIB_HAS_SUBMDSPAN)
+        message(STATUS "incstd: standard <mdspan> is available but submdspan is not; using bundled submdspan fallback")
+    else()
+        message(STATUS "incstd: standard <mdspan> is unavailable; using bundled mdspan fallback")
+        set(INCSTD_USE_BUNDLED_MDSPAN 1)
+    endif()
+
     CPMAddPackage("gh:InCom-0/mdspan#stable")
-    set(INCSTD_USE_BUNDLED_MDSPAN 1)
+    set(INCSTD_USE_BUNDLED_SUBMDSPAN 1)
     set(INCSTD_MDSPAN_TARGET mdspan::mdspan)
 endif()
 

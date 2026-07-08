@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <deque>
-#include <mspan/mdspan>
 #include <vector>
 
+#include <incstd/polyfills/mdspan.hpp>
 
 
 namespace incom::standard::explorers {
@@ -16,10 +16,26 @@ requires(Dims > 0) && requires(F_Allowed f, std::array<size_t, Dims> const &item
     { f(item) } -> std::same_as<bool>; // The F_Allowed need to be able to take 'Pos_t const&'
 }
 class Chebyshev {
+
+#if defined(INCSTD_MDSPAN_UNDER_KOKKOS)
+    template <class IndexType, size_t Rank>
+    using pf_dextents = Kokkos::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents>
+    using pf_mdspan = Kokkos::mdspan<ElementType, Extents>;
+#else
+    template <class IndexType, size_t Rank>
+    using pf_dextents = std::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents>
+    using pf_mdspan = std::mdspan<ElementType, Extents>;
+#endif
+
+
 public:
     using Pos_t   = std::array<size_t, Dims>;
-    using Extents = std::dextents<size_t, Dims>;
-    using View_t  = std::mdspan<char, Extents>;
+    using Extents = pf_dextents<size_t, Dims>;
+    using View_t  = pf_mdspan<char, Extents>;
 
     using DirChngs_t = std::array<Pos_t, Dims * 2>;
 
