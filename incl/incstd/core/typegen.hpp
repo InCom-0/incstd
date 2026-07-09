@@ -42,6 +42,31 @@ struct c_gen_X_repeat_sequence<0, S, Sx...> {
     using type = std::integer_sequence<long long, Sx...>;
 };
 
+
+namespace detail {
+template <typename T, size_t First, size_t... IDs>
+struct __c_gen_nestedArray {
+    static_assert(false, "Cannot do this");
+};
+
+template <typename T, size_t First, size_t... IDs>
+requires(sizeof...(IDs) > 0)
+struct __c_gen_nestedArray<T, First, IDs...> {
+    using type = typename std::array<typename __c_gen_nestedArray<T, IDs...>::type, First>;
+};
+
+template <typename T, size_t First, size_t... IDs>
+requires(sizeof...(IDs) == 0)
+struct __c_gen_nestedArray<T, First, IDs...> {
+    using type = typename std::array<T, First>;
+};
+
+} // namespace detail
+
+template <typename T, size_t First, size_t... IDs>
+using c_gen_nestedArray = detail::__c_gen_nestedArray<T, First, IDs...>::type;
+
+
 namespace detail {
 // Shamelessly 'borrowed' from https://godbolt.org/z/6nbfsbTz1 ... from a comment on SO
 // https://stackoverflow.com/questions/72706224/how-do-i-reverse-the-order-of-the-integers-in-a-stdinteger-sequenceint-4
