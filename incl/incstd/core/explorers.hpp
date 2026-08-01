@@ -10,6 +10,57 @@
 namespace incom::standard::explorers {
 using namespace incom::standard;
 
+// Helper functions to
+namespace directions {
+// template <size_t Dims, typename INT = long long, INT StepSz = 1LL, size_t Simult = 1uz>
+// requires(std::is_signed<INT>::value) && (Dims > 1uz)
+// inline consteval auto
+// get_dirChanges_simult() {
+//     constexpr size_t posCount = []<size_t... Is>(std::index_sequence<Is...>) {
+//         return (0uz + ... + (static_cast<void>(Is), 2uz));
+//     }(std::make_index_sequence<Dims>{});
+
+
+//     std::array<std::array<long long, 0LL>, Dims> changes;
+
+
+//     std::array<std::array<INT, Dims>, posCount> res{};
+//     for (size_t oneDir = 0uz; oneDir < Dims; ++oneDir) {
+//         res[oneDir * 2][oneDir]       = StepSz;
+//         res[(oneDir * 2) + 1][oneDir] = (-1 * StepSz);
+//     }
+//     return res;
+// }
+
+template <size_t Dims, typename INT = long long, INT StepSz = 1LL>
+requires(std::is_signed<INT>::value) && (Dims > 1uz)
+inline consteval auto
+get_dirChanges() {
+    constexpr size_t posCount = []<size_t... Is>(std::index_sequence<Is...>) {
+        return (0uz + ... + (static_cast<void>(Is), 2uz));
+    }(std::make_index_sequence<Dims>{});
+
+    std::array<std::array<INT, Dims>, posCount> res{};
+    for (size_t oneDir = 0uz; oneDir < Dims; ++oneDir) {
+        res[oneDir * 2][oneDir]       = StepSz;
+        res[(oneDir * 2) + 1][oneDir] = (-1 * StepSz);
+    }
+    return res;
+}
+template <typename INT = long long, INT StepSz = 1LL>
+requires(std::is_signed<INT>::value)
+inline consteval auto
+get_dirChanges_2D() {
+    return get_dirChanges<2uz, INT, StepSz>();
+}
+template <typename INT = long long, INT StepSZ = 1LL>
+requires(std::is_signed<INT>::value)
+inline consteval auto
+get_dirChanges_3D() {
+    return get_dirChanges<3uz, INT, StepSZ>();
+}
+} // namespace directions
+
 // Explores 'Dims-dimensional' space in Chebyshev-layered fashion (as if by chessboard distance)
 template <typename F_Allowed, size_t Dims>
 requires(Dims > 0) && requires(F_Allowed f, std::array<size_t, Dims> const &item) {
@@ -41,15 +92,7 @@ public:
 
 
 public:
-    static constexpr auto       c_IDs_sequence = std::make_index_sequence<Dims>{};
-    static constexpr DirChngs_t m_dirChanges   = [] {
-        DirChngs_t res{};
-        for (size_t i = 0; i < Dims; ++i) {
-            res[i * 2][i]     = -1;
-            res[i * 2 + 1][i] = 1;
-        }
-        return res;
-    }();
+    static constexpr auto c_IDs_sequence = std::make_index_sequence<Dims>{};
 
     Pos_t m_areaSzs_perDim;
     Pos_t m_areaMins_perDim;
@@ -125,7 +168,7 @@ public:
             // Make sure we create a new queue if we are at the 'end'
             if (m_queueIDToUseNext == (m_VofQueues.size() - 1)) { m_VofQueues.emplace_back(); }
 
-            for (auto const &oneDir : m_dirChanges) {
+            for (auto const &oneDir : directions::get_dirChanges<Dims>()) {
                 Pos_t toInsert = res;
                 [&]<size_t... Is>(std::index_sequence<Is...>) { ((toInsert[Is] += oneDir[Is]), ...); }(c_IDs_sequence);
 
@@ -143,11 +186,11 @@ public:
                     m_queuedCount++;
                 }
             }
+            while (m_queueIDToUseNext < m_VofQueues.size() && m_VofQueues[m_queueIDToUseNext].empty()) {
+                m_queueIDToUseNext++;
+            }
+            m_queuedCount--;
         }
-        while (m_queueIDToUseNext < m_VofQueues.size() && m_VofQueues[m_queueIDToUseNext].empty()) {
-            m_queueIDToUseNext++;
-        }
-        m_queuedCount--;
         return res;
     }
 
