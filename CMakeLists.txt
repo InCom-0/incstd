@@ -1,27 +1,31 @@
 cmake_minimum_required(VERSION 3.30...4.0)
 
 project(incstd
-  HOMEPAGE_URL "https://github.com/InCom-0/incstd"
-  VERSION "0.1.0"
-  DESCRIPTION
-  "A modest extension of C++ standard library."
-  LANGUAGES CXX)
+	HOMEPAGE_URL "https://github.com/InCom-0/incstd"
+	VERSION "0.1.0"
+	DESCRIPTION "A modest extension of C++ standard library."
+	LANGUAGES CXX
+)
 
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
-option(CPM_USE_LOCAL_PACKAGES "Use local (usually system installed) packages for dependencies." ON)
-option(CPM_LOCAL_PACKAGES_ONLY "Forbid the build system from downloading missing dependencies." OFF)
-
+option(CPM_USE_LOCAL_PACKAGES
+	"Use local (usually system installed) packages for dependencies."
+	ON
+)
+option(CPM_LOCAL_PACKAGES_ONLY
+	"Forbid the build system from downloading missing dependencies."
+	OFF
+)
 
 #####################################################################
 ### Platform specifics + hacks ###
 #####################################################################
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_compile_options(/utf-8)
-  add_compile_definitions(NOMINMAX)
+	add_compile_options(/utf-8)
+	add_compile_definitions(NOMINMAX)
 endif()
-
 
 ######################################################################
 ### Target specification ###
@@ -30,35 +34,40 @@ add_library(incstd INTERFACE)
 add_library(incstd::incstd ALIAS incstd)
 
 target_sources(incstd
-  PUBLIC
-  FILE_SET pub_headers
-  TYPE HEADERS
-  BASE_DIRS
-  incl)
+	PUBLIC
+	FILE_SET pub_headers
+	TYPE
+	HEADERS
+	BASE_DIRS
+	incl
+)
 
-target_compile_features(incstd INTERFACE cxx_std_23)
-
+# target_compile_features(incstd INTERFACE cxx_std_23)
 
 ##########################################################################
 ### Dependencies and library linking  ###
 ##########################################################################
-include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
+include(CMake_dependencies.cmake
+) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
-target_compile_definitions(incstd INTERFACE INCSTD_USE_BUNDLED_MDSPAN=${INCSTD_USE_BUNDLED_MDSPAN} INCSTD_USE_BUNDLED_SUBMDSPAN=${INCSTD_USE_BUNDLED_SUBMDSPAN})
+target_compile_definitions(incstd
+	INTERFACE
+		INCSTD_USE_BUNDLED_MDSPAN=${INCSTD_USE_BUNDLED_MDSPAN}
+		INCSTD_USE_BUNDLED_SUBMDSPAN=${INCSTD_USE_BUNDLED_SUBMDSPAN}
+)
 
-target_link_libraries(
-  incstd
-  INTERFACE
-  more_concepts::more_concepts
-  xxHash::xxhash
-  unordered_dense::unordered_dense
-  ${INCSTD_MDSPAN_TARGET})
-
+target_link_libraries(incstd
+	INTERFACE
+		more_concepts::more_concepts
+		xxHash::xxhash
+		unordered_dense::unordered_dense
+		${INCSTD_MDSPAN_TARGET}
+)
 
 ##########################################################################
 ### Subdirs - tests, demos and the like ###
 ##########################################################################
 option(INCSTD_BUILD_DEMOS "Build demo executables" ${PROJECT_IS_TOP_LEVEL})
 if(INCSTD_BUILD_DEMOS)
-  add_subdirectory(demos)
+	add_subdirectory(demos)
 endif()
