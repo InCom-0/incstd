@@ -1,85 +1,49 @@
 include(cmake/CPM_0.43.1.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/incom/modules")
 
-include(CMakePushCheckState)
-include(CheckCXXSourceCompiles)
 
+######################################
+### MDSPAN sourcing if necessary
+######################################
 
-set(INCSTD_USE_BUNDLED_MDSPAN 0)
+# Provider policy:
+# AUTO    -> use stdlib only if BOTH mdspan + submdspan are available at compile-time
+# STDLIB  -> force stdlib (error at compile-time if missing required features)
+# BUNDLED -> force bundled
+set(INCSTD_MDSPAN_PROVIDER "AUTO" CACHE STRING "AUTO|STDLIB|BUNDLED")
+set_property(CACHE INCSTD_MDSPAN_PROVIDER PROPERTY STRINGS AUTO STDLIB BUNDLED)
 
-# cmake_push_check_state(RESET)
+# If not forced STDLIB, make bundled fallback available.
+if(NOT INCSTD_MDSPAN_PROVIDER STREQUAL "STDLIB")
+	CPMAddPackage("gh:InCom-0/mdspan#stable")
+	set(INCSTD_MDSPAN_TARGET mdspan::mdspan)
+endif()
 
-# if((DEFINED CMAKE_CXX26_STANDARD_COMPILE_OPTION) OR (DEFINED CMAKE_CXX26_EXTENSION_COMPILE_OPTION))
-#     if(NOT CMAKE_CXX_EXTENSIONS)
-#         string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX26_STANDARD_COMPILE_OPTION}")
-#     else()
-#         string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX26_EXTENSION_COMPILE_OPTION}")
-#     endif()
-# else()
-#     if(NOT CMAKE_CXX_EXTENSIONS)
-#         string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX23_STANDARD_COMPILE_OPTION}")
-#     else()
-#         string(APPEND CMAKE_REQUIRED_FLAGS " ${CMAKE_CXX23_EXTENSION_COMPILE_OPTION}")
-#     endif()
-# endif()
+# Export one compile define for headers to consume.
+set(INCSTD_MDSPAN_PROVIDER_DEFINE "")
+if(INCSTD_MDSPAN_PROVIDER STREQUAL "STDLIB")
+	set(INCSTD_MDSPAN_PROVIDER_DEFINE INCSTD_MDSPAN_FORCE_STDLIB=1)
+elseif(INCSTD_MDSPAN_PROVIDER STREQUAL "BUNDLED")
+	set(INCSTD_MDSPAN_PROVIDER_DEFINE INCSTD_MDSPAN_FORCE_BUNDLED=1)
+endif()
 
-# check_cxx_source_compiles(
-#     [[
-#         #include <vector>
-#         #include <mdspan>
-#         int main() {
-#                 std::vector<int> matrix;
-#                 std::mdspan<int, std::dextents<std::size_t, 2>> view(matrix.data(), 3, 3);
-#                 return static_cast<int>(view.rank());
-#         }
-#     ]]
-#     INCSTD_STDLIB_HAS_MDSPAN)
-
-# check_cxx_source_compiles(
-#     [[
-#         #include <mdspan>
-#         #include <vector>
-
-#         int main() {
-#                 std::vector<int> matrix;
-#                 std::mdspan<int, std::dextents<std::size_t, 2>> view(matrix.data(), 3, 3);
-#                 auto inner = std::submdspan(view, std::pair{1, 1}, std::pair{2, 2});
-                
-#                 return static_cast<int>(inner.rank());
-#         }
-#     ]]
-#     INCSTD_STDLIB_HAS_SUBMDSPAN)
-
-# cmake_pop_check_state()
-
-# set(INCSTD_USE_BUNDLED_MDSPAN 0)
-# set(INCSTD_USE_BUNDLED_SUBMDSPAN 0)
-# if(INCSTD_STDLIB_HAS_MDSPAN AND INCSTD_STDLIB_HAS_SUBMDSPAN)
-#     message(STATUS "incstd: detected standard <mdspan> with 'std::submdspan' support")
-# else()
-#     if(INCSTD_STDLIB_HAS_MDSPAN AND NOT INCSTD_STDLIB_HAS_SUBMDSPAN)
-#         message(STATUS "incstd: standard <mdspan> is available but submdspan is not; using bundled submdspan fallback")
-#     else()
-#         message(STATUS "incstd: standard <mdspan> is unavailable; using bundled mdspan fallback")
-#         set(INCSTD_USE_BUNDLED_MDSPAN 1)
-#     endif()
-
-    CPMAddPackage("gh:InCom-0/mdspan#stable")
-    set(INCSTD_USE_BUNDLED_SUBMDSPAN 1)
-    set(INCSTD_MDSPAN_TARGET mdspan::mdspan)
-# endif()
 
 
 CPMAddPackage("gh:MiSo1289/more_concepts#master")
 
 # Try again with CPM, if not found either then build from source
 CPMAddPackage(
-    URI "gh:Cyan4973/xxHash#dev"
-    SOURCE_SUBDIR build/cmake
-    OPTIONS "BUILD_SHARED_LIBS OFF" "XXHASH_BUILD_XXHSUM OFF"
-    NAME xxHash
+	URI
+	"gh:Cyan4973/xxHash#dev"
+	SOURCE_SUBDIR build/cmake
+	OPTIONS
+		"BUILD_SHARED_LIBS OFF"
+		"XXHASH_BUILD_XXHSUM OFF"
+	NAME xxHash
 )
 
 CPMAddPackage(
-    URI "gh:martinus/unordered_dense@4.8.1"
-    NAME unordered_dense)
+	URI
+	"gh:martinus/unordered_dense@4.8.1"
+	NAME unordered_dense
+)

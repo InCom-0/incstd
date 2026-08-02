@@ -2,23 +2,46 @@
 
 #include <version>
 
-#if __cpp_lib_mdspan >= 202207L
-#if __cpp_lib_submdspan >= 202306L
-#include <mdspan>
 
-#else
+#if defined(INCSTD_MDSPAN_FORCE_BUNDLED) // FORCE BUNDLED
+#if defined(__cpp_lib_mdspan) && (__cpp_lib_mdspan >= 202207L)
 #warning Including mdspan polyfill under Kokkos:: namespace because partial (without submdspan) implementation exists on your system and it would conflict otherwise
 #include <mdspan/mdspan.hpp>
-
 #ifndef INCSTD_MDSPAN_UNDER_KOKKOS
 #define INCSTD_MDSPAN_UNDER_KOKKOS
-#endif
 #endif
 
 #else
 #include <experimental/mdspan>
 #endif
 
+
+#elif defined(INCSTD_MDSPAN_FORCE_STDLIB) // FORCE STDLIB
+#if ! defined(__cpp_lib_mdspan) || (__cpp_lib_mdspan < 202207L) || ! defined(__cpp_lib_submdspan) ||                   \
+    (__cpp_lib_submdspan < 202306L)
+#error "INCSTD_MDSPAN_FORCE_STDLIB is set, but stdlib lacks required mdspan/submdspan."
+
+#else
+#include <mdspan>
+#endif
+
+
+#else // AUTO
+#if ! defined(__cpp_lib_mdspan) || (__cpp_lib_mdspan < 202207L)
+#include <experimental/mdspan>
+
+#elif defined(__cpp_lib_mdspan) && (__cpp_lib_mdspan >= 202207L) && defined(__cpp_lib_submdspan) &&                    \
+    (__cpp_lib_submdspan >= 202306L)
+#include <mdspan>
+
+#else
+#warning Including mdspan polyfill under Kokkos:: namespace because partial (without submdspan) implementation exists on your system and it would conflict otherwise
+#include <mdspan/mdspan.hpp>
+#ifndef INCSTD_MDSPAN_UNDER_KOKKOS
+#define INCSTD_MDSPAN_UNDER_KOKKOS
+#endif
+#endif
+#endif
 
 namespace incom::standard::polyfills {
 #if defined(INCSTD_MDSPAN_UNDER_KOKKOS)

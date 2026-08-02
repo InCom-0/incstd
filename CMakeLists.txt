@@ -42,7 +42,10 @@ target_sources(incstd
 	incl
 )
 
-# target_compile_features(incstd INTERFACE cxx_std_23)
+target_compile_definitions(incstd INTERFACE ${INCSTD_MDSPAN_PROVIDER_DEFINE})
+if(TARGET mdspan::mdspan)
+	target_link_libraries(incstd INTERFACE mdspan::mdspan)
+endif()
 
 ##########################################################################
 ### Dependencies and library linking  ###
