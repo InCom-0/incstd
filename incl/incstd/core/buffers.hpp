@@ -73,7 +73,7 @@ public:
     // Convenience 'alias' which just calls rotate()
     // More syntactically friedly (especially when using the class as 'double buffer')
     void
-    swap() {
+    swap_buffers() {
         rotate();
     }
 };
