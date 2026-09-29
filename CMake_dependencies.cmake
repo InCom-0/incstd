@@ -1,7 +1,6 @@
 include(cmake/CPM_0.43.1.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/incom/modules")
 
-
 ######################################
 ### MDSPAN sourcing if necessary
 ######################################
@@ -27,8 +26,6 @@ elseif(INCSTD_MDSPAN_PROVIDER STREQUAL "BUNDLED")
 	set(INCSTD_MDSPAN_PROVIDER_DEFINE INCSTD_MDSPAN_FORCE_BUNDLED=1)
 endif()
 
-
-
 CPMAddPackage("gh:MiSo1289/more_concepts#master")
 
 # Try again with CPM, if not found either then build from source
@@ -44,6 +41,6 @@ CPMAddPackage(
 
 CPMAddPackage(
 	URI
-	"gh:martinus/unordered_dense@4.8.1"
+	"gh:martinus/unordered_dense#v5.2.0"
 	NAME unordered_dense
 )
