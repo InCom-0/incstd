@@ -14,21 +14,21 @@ class MultiBuffer {
 private:
     std::array<T, NUM> __data;
 
-    std::array<T *, NUM> __dataPTRs = [&]<typename SZ, SZ... ints>(const std::integer_sequence<SZ, ints...> &) {
+    std::array<T *, NUM> __dataPTRs = [&]<std::size_t... ints>(std::integer_sequence<std::size_t, ints...>) {
         return std::array<T *, NUM>{&__data[ints]...};
     }(std::make_index_sequence<NUM>{});
 
 public:
     // CONSTRUCTION
     MultiBuffer()
-        : __data([]<typename SZ, SZ... ints>(const std::integer_sequence<SZ, ints...> &) {
+        : __data([]<std::size_t... ints>(std::integer_sequence<std::size_t, ints...>) {
               return std::array<T, NUM>{(ints, T{})...};
           }(std::make_index_sequence<NUM>{})) {};
 
     // By default 'initial_data' gets only copied into 'Current', rest is default constructed
     template <bool fillAll = false>
     MultiBuffer(T const &initial_data)
-        : __data([&]<typename SZ, SZ... ints>(const std::integer_sequence<SZ, ints...> &) {
+        : __data([&]<std::size_t... ints>(std::integer_sequence<std::size_t, ints...>) {
               if constexpr (fillAll) { return std::array<T, NUM>{(ints, initial_data)...}; }
               else {
                   auto res    = std::array<T, NUM>{(ints, T{})...};
