@@ -33,7 +33,7 @@ namespace directions {
 // }
 
 template <size_t Dims, typename INT = long long, INT StepSz = 1LL>
-requires(std::is_signed<INT>::value) && (Dims > 1uz)
+requires(std::is_signed<INT>::value) && (Dims > 0uz)
 inline consteval auto
 get_dirChanges() {
     constexpr size_t posCount = []<size_t... Is>(std::index_sequence<Is...>) {
