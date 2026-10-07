@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <ranges>
+#include <tuple>
 #include <utility>
 
 #include <incstd/core/typegen.hpp>
@@ -18,18 +20,16 @@ requires(K > 1)
 class _kcomb_iter {
     using base_iterator   = std::ranges::iterator_t<RANGE>;
     using base_sentinel   = std::ranges::sentinel_t<RANGE>;
+    using base_difference = std::ranges::range_difference_t<RANGE>;
     using base_value_type = std::ranges::range_value_t<RANGE>;
     using base_reference  = std::ranges::range_reference_t<RANGE>;
 
     std::array<base_iterator, K> iters;
-    std::array<base_sentinel, K> end_iters;
+    std::array<base_iterator, K> end_iters;
 
-    static constexpr auto idxSeq     = std::make_index_sequence<K>{};
-    static constexpr auto idxSeq_rev = transform_integer_sequence<std::views::reverse, decltype(idxSeq)>{};
+    static constexpr auto k_as_diff = static_cast<base_difference>(K);
 
-    template <size_t... I>
-    constexpr _kcomb_iter(std::index_sequence<I...>, base_iterator begin, base_sentinel end)
-        : iters{(std::next(begin, I))...}, end_iters{std::next(begin, I + (end - begin) - (K - 1))...} {}
+    static constexpr auto idxSeq = std::make_index_sequence<K>{};
 
 public:
     using value_type        = c_generateTuple<K, base_value_type>::type;
@@ -39,30 +39,44 @@ public:
 
     [[nodiscard]] constexpr _kcomb_iter() = default;
 
-    [[nodiscard]] constexpr _kcomb_iter(base_iterator begin, base_sentinel end) : _kcomb_iter(idxSeq, begin, end) {}
+    [[nodiscard]] constexpr _kcomb_iter(base_iterator begin, base_sentinel end) {
+        const auto end_it = std::ranges::next(begin, end);
+        const auto n      = std::ranges::distance(begin, end);
+
+        // No valid K-combination exists when the range is shorter than K.
+        if (n < k_as_diff) {
+            iters.fill(end_it);
+            end_iters.fill(end_it);
+            return;
+        }
+
+        for (size_t i = 0; i < K; ++i) {
+            const auto idx = static_cast<base_difference>(i);
+            iters[i]       = std::ranges::next(begin, idx, end);
+            end_iters[i]   = std::ranges::next(begin, idx + (n - (k_as_diff - static_cast<base_difference>(1))), end);
+        }
+    }
 
 
     // TODO: Explore possibility of turning it into a coroutine somehow
     //  Prefix increment
     constexpr auto
     operator++() -> _kcomb_iter & {
-        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...>) -> void {
-            size_t firstIncremID = 0;
-            if (((std::next(iters[Is]) == end_iters[Is] ? (true) : (iters[Is]++, firstIncremID = Is, false)) && ...)) {
-                ((iters[Is] = end_iters[Is]), ...);
-                return;
-            }
-            else {
-                base_iterator *ptr = &(iters[firstIncremID]);
-                for (size_t upIDs = (firstIncremID + 1); upIDs < sizeof...(Is); ++upIDs) {
-                    (iters[upIDs]) = std::next(iters[upIDs - 1]);
-                }
-                return;
-            }
-            std::unreachable();
-        };
+        for (size_t i = K; i-- > 0;) {
+            auto next_it = iters[i];
+            ++next_it;
+            if (next_it == end_iters[i]) { continue; }
 
-        lam(idxSeq_rev);
+            ++iters[i];
+            for (size_t j = i + 1; j < K; ++j) {
+                iters[j] = iters[j - 1];
+                ++iters[j];
+            }
+            return *this;
+        }
+
+        // Mark as exhausted.
+        iters = end_iters;
         return *this;
     }
 
@@ -83,14 +97,11 @@ public:
     }
 
     [[nodiscard]] constexpr auto
-    operator<=>(const _kcomb_iter &) const = default;
+    operator==(const _kcomb_iter &) const -> bool = default;
 
     [[nodiscard]] constexpr auto
     operator==(const _kcomb_sentinel<RANGE> & /*unused*/) const -> bool {
-        auto lam = [&]<size_t... Is>(std::integer_sequence<size_t, Is...> seq) -> bool {
-            return ((iters[Is] == end_iters[Is] ? (true) : false) && ...);
-        };
-        return lam(idxSeq);
+        return iters[K - 1] == end_iters[K - 1];
     }
 };
 
@@ -102,16 +113,29 @@ class _kcomb_view : public std::ranges::view_interface<_kcomb_view<RANGE, K>> {
 public:
     [[nodiscard]] constexpr _kcomb_view() = default;
 
-    template <size_t KK = K>
     [[nodiscard]] constexpr explicit _kcomb_view(RANGE range) : base_{std::move(range)} {}
 
     [[nodiscard]] constexpr auto
-    begin() const -> _kcomb_iter<RANGE, K> {
+    begin() -> _kcomb_iter<RANGE, K> {
         return _kcomb_iter<RANGE, K>{std::ranges::begin(base_), std::ranges::end(base_)};
     }
 
     [[nodiscard]] constexpr auto
-    end() const -> _kcomb_sentinel<RANGE> {
+    end() -> _kcomb_sentinel<RANGE> {
+        return {};
+    }
+
+    [[nodiscard]] constexpr auto
+    begin() const -> _kcomb_iter<const RANGE, K>
+    requires std::ranges::forward_range<const RANGE>
+    {
+        return _kcomb_iter<const RANGE, K>{std::ranges::begin(base_), std::ranges::end(base_)};
+    }
+
+    [[nodiscard]] constexpr auto
+    end() const -> _kcomb_sentinel<const RANGE>
+    requires std::ranges::forward_range<const RANGE>
+    {
         return {};
     }
 };
@@ -121,10 +145,11 @@ public:
 
 template <size_t K>
 struct _kcomb_fn : std::ranges::range_adaptor_closure<_kcomb_fn<K>> {
-    template <typename RANGE>
+    template <std::ranges::viewable_range RANGE>
+    requires std::ranges::forward_range<RANGE>
     constexpr auto
     operator()(RANGE &&range) const {
-        return _kcomb_view<std::views::all_t<RANGE>, K>{std::forward<RANGE>(range)};
+        return _kcomb_view<std::views::all_t<RANGE>, K>{std::views::all(std::forward<RANGE>(range))};
     }
 };
 } // namespace detail
