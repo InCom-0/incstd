@@ -7,7 +7,7 @@
 namespace incstd = incom::standard;
 #endif
 
-#ifndef INCOM_INCCONS_NAMESPACE_ALIAS
-#define INCOM_INCCONS_NAMESPACE_ALIAS
+#ifndef INCOM_INCPOLYF_NAMESPACE_ALIAS
+#define INCOM_INCPOLYF_NAMESPACE_ALIAS
 namespace incpf = incom::standard::polyfills;
 #endif

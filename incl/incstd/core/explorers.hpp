@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <stack>
 #include <vector>
 
 #include <incstd/polyfills/mdspan.hpp>
@@ -9,6 +10,61 @@
 
 namespace incom::standard::explorers {
 using namespace incom::standard;
+
+namespace _detail {
+template <size_t N>
+struct NoOpAlwaysTrue {
+    constexpr bool
+    operator()(std::array<size_t, N> const &) const noexcept {
+        return true;
+    }
+};
+
+template <size_t N>
+struct NoOpOnFill {
+    constexpr void
+    operator()(std::array<size_t, N> const &) const noexcept {}
+};
+
+struct BitRef {
+    std::uint64_t *m_word{};
+    std::uint64_t  m_mask{};
+
+    constexpr
+    operator bool() const noexcept {
+        return (*m_word & m_mask) != 0;
+    }
+
+    constexpr BitRef &
+    operator=(bool v) noexcept {
+        if (v) { *m_word |= m_mask; }
+        else { *m_word &= ~m_mask; }
+        return *this;
+    }
+
+    constexpr BitRef &
+    operator=(BitRef const &other) noexcept {
+        return *this = static_cast<bool>(other);
+    }
+};
+
+struct BitAccessor {
+    using offset_policy    = BitAccessor;
+    using element_type     = bool;
+    using reference        = BitRef;
+    using data_handle_type = std::uint64_t *;
+
+    constexpr reference
+    access(data_handle_type p, size_t i) const noexcept {
+        return reference{.m_word = p + (i >> 6), .m_mask = (std::uint64_t{1} << (i & 63))};
+    }
+
+    constexpr data_handle_type
+    offset(data_handle_type p, size_t i) const noexcept {
+        return p + (i >> 6);
+    }
+};
+} // namespace _detail
 
 // Helper functions to
 namespace directions {
@@ -60,6 +116,11 @@ get_dirChanges_3D() {
     return get_dirChanges<3uz, INT, StepSZ>();
 }
 } // namespace directions
+
+
+// ####################################
+// ### CHEBYSHEV EXPLORER
+// ####################################
 
 // Explores 'Dims-dimensional' space in Chebyshev-layered fashion (as if by chessboard distance)
 template <typename F_Allowed, size_t Dims>
@@ -226,4 +287,203 @@ template <typename F, size_t N>
 Chebyshev(F &&, std::array<size_t, N> const &, std::array<size_t, N> const &, std::array<size_t, N> const &)
     -> Chebyshev<std::remove_cvref_t<F>, N>;
 
+
+// ####################################
+// ### FLOODFILL
+// ####################################
+
+template <size_t Dims, typename F_Allowed, typename F_OnFill>
+requires(Dims > 1) && requires(std::array<size_t, Dims> const &item, F_Allowed f_a, F_OnFill f_of) {
+    { f_a(item) } -> std::same_as<bool>;  // The F_Allowed need to be able to take 'Pos_t const&'
+    { f_of(item) } -> std::same_as<void>; // The F_OnFill need to be able to take 'Pos_t const&'
+}
+class FloodFill {
+public:
+    using Pos_t = std::array<size_t, Dims>;
+
+    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, _detail::NoOpAlwaysTrue<Dims>{}) {}
+    // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
+
+    FloodFill(Pos_t areaSzs, F_Allowed &&f_a)
+        : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), _detail::NoOpOnFill<Dims>{}) {}
+
+    // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
+    FloodFill(Pos_t areaSzs, F_Allowed &&f_a, F_OnFill &&f_of)
+        : FloodFill(areaSzs, {}, std::forward<F_Allowed>(f_a), std::forward<F_OnFill>(f_of)) {}
+
+    // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
+    FloodFill(Pos_t areaSzs, Pos_t areaMins, F_Allowed &&f_a = _detail::NoOpAlwaysTrue<Dims>{},
+              F_OnFill &&f_of = _detail::NoOpOnFill<Dims>{})
+        : m_areaSzs_perDim(std::move(areaSzs)), m_areaMins_perDim{std::move(areaMins)},
+          m_visited_storage(_ctor_total_words(m_areaSzs_perDim), 0),
+          m_visited(m_visited_storage.data(), _ctor_make_extents(m_areaSzs_perDim)),
+          m_f_allowed(std::forward<F_Allowed>(f_a)), m_f_onfill(std::forward<F_OnFill>(f_of)) {}
+
+
+    constexpr bool
+    is_inArea(Pos_t const &p) const {
+        return [&]<size_t... Is>(std::index_sequence<Is...>) {
+            return ((p[Is] >= m_areaMins_perDim[Is]) && ...) && ((p[Is] < m_areaSzs_perDim[Is]) && ...);
+        }(c_IDs_sequence);
+    }
+
+    constexpr bool
+    is_alreadyVisited(Pos_t const &p) const {
+        return [&]<size_t... Is>(std::index_sequence<Is...>) -> bool { return m_visited[p[Is]...]; }(c_IDs_sequence);
+    }
+
+    constexpr void
+    visit_at(Pos_t const &p) {
+        [&]<size_t... Is>(std::index_sequence<Is...>) -> void { m_visited[p[Is]...] = true; }(c_IDs_sequence);
+    }
+
+    constexpr std::size_t
+    execute_fill(Pos_t seed) {
+        using DimRange_t = std::array<Pos_t, 2uz>;
+        using Frame_t    = std::array<DimRange_t, 2 * (Dims - 1)>;
+
+        std::size_t         res{};
+        std::stack<Frame_t> seedScanRngs{};
+
+        std::optional<Pos_t> leftSeed = seed;
+        Pos_t                rightSeed;
+
+        auto fillFromSeed = [&]() {
+            Pos_t &ls = leftSeed.value();
+            rightSeed = ls;
+            rightSeed.back()++;
+
+            while (is_inArea(ls) && m_f_allowed(leftSeed.value())) {
+                res++;
+                visit_at(ls);
+                m_f_onfill(ls);
+                ls.back()--;
+            }
+            while (is_inArea(rightSeed) && m_f_allowed(rightSeed)) {
+                res++;
+                visit_at(rightSeed);
+                m_f_onfill(rightSeed);
+                rightSeed.back()++;
+            }
+            ls.back()++;
+            rightSeed.back()--;
+
+            // Adding new ranges to scan
+            seedScanRngs.push([&]<size_t... Is>(std::index_sequence<Is...>) {
+                return Frame_t{{((void)Is, DimRange_t{ls, rightSeed})...}};
+            }(c_IDs_sequenceMinusDouble));
+
+
+            [&]<size_t... Is>(std::index_sequence<Is...>) {
+                for (size_t id{}; auto const &oneDir : directions::get_dirChanges<Dims - 1>()) {
+                    ((seedScanRngs.top().at(id).front()[Is] += oneDir[Is]), ...);
+                    id++;
+                }
+
+                // seedScanRngs.top();
+            }(c_IDs_sequenceMinus);
+        };
+
+        auto searchForSeed = [&]() -> std::optional<Pos_t> {
+            std::optional<Pos_t> res{};
+
+            while (not seedScanRngs.empty()) {
+                Frame_t &oneFrame = seedScanRngs.top();
+                for (auto &[from, to] : oneFrame) {
+                    while ((is_alreadyVisited(from) || not m_f_allowed(from)) && from.back() <= to.back()) {
+                        from.back()++;
+                    }
+                    if (from.back() <= to.back()) {
+                        res = from;
+                        from.back()++;
+                        goto RET;
+                    }
+                }
+                seedScanRngs.pop();
+            }
+
+        RET:
+            return res;
+        };
+
+        if (not is_inArea(leftSeed.value()) || not m_f_allowed(leftSeed.value()) ||
+            is_alreadyVisited(leftSeed.value())) {
+            goto RET;
+        }
+
+        fillFromSeed();
+        while (leftSeed = searchForSeed(), leftSeed) { fillFromSeed(); }
+
+    RET:
+        return res;
+    }
+
+private:
+#if defined(INCSTD_MDSPAN_UNDER_KOKKOS)
+    template <class IndexType, size_t Rank>
+    using pf_dextents = Kokkos::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents, class... Args>
+    using pf_mdspan = Kokkos::mdspan<ElementType, Extents, Args...>;
+
+    using pf_layout_right = Kokkos::layout_right;
+#else
+    template <class IndexType, size_t Rank>
+    using pf_dextents = std::dextents<IndexType, Rank>;
+
+    template <class ElementType, class Extents, class... Args>
+    using pf_mdspan = std::mdspan<ElementType, Extents, Args...>;
+
+    using pf_layout_right = std::layout_right;
+#endif
+
+    using Extents_t = pf_dextents<size_t, Dims>;
+    using View_t    = pf_mdspan<bool, Extents_t, pf_layout_right, _detail::BitAccessor>;
+
+    static constexpr auto c_IDs_sequence            = std::make_index_sequence<Dims>{};
+    static constexpr auto c_IDs_sequenceMinus       = std::make_index_sequence<Dims - 1>{};
+    static constexpr auto c_IDs_sequenceMinusDouble = std::make_index_sequence<2 * (Dims - 1)>{};
+
+    Pos_t m_areaSzs_perDim;
+    Pos_t m_areaMins_perDim;
+
+    std::vector<std::uint64_t> m_visited_storage;
+    View_t                     m_visited;
+
+    F_Allowed m_f_allowed;
+    F_OnFill  m_f_onfill;
+
+
+private:
+    static constexpr size_t
+    _ctor_total_sz(Pos_t const &sizes) {
+        return std::ranges::fold_left(sizes, 1uz, std::multiplies{});
+    }
+
+    static constexpr size_t
+    _ctor_total_words(Pos_t const &sizes) {
+        auto const bits = _ctor_total_sz(sizes);
+        return (bits + 63uz) / 64uz;
+    }
+
+    static constexpr Extents_t
+    _ctor_make_extents(Pos_t const &sizes) {
+        return [&]<size_t... Is>(std::index_sequence<Is...>) { return Extents_t(sizes[Is]...); }(c_IDs_sequence);
+    }
+};
+
+// Deduction guides
+template <size_t N>
+FloodFill(std::array<size_t, N> const &) -> FloodFill<N, _detail::NoOpAlwaysTrue<N>, _detail::NoOpOnFill<N>>;
+
+template <size_t N, typename F_A>
+FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, _detail::NoOpOnFill<N>>;
+
+template <size_t N, typename F_A, typename F_OF>
+FloodFill(std::array<size_t, N> const &, F_A &&, F_OF &&)
+    -> FloodFill<N, std::remove_cvref_t<F_A>, std::remove_cvref_t<F_OF>>;
+
+template <size_t N, typename F_A, typename F_OF>
+FloodFill(std::array<size_t, N> const &, std::array<size_t, N> const &, F_A &&, F_OF &&)
+    -> FloodFill<N, std::remove_cvref_t<F_A>, std::remove_cvref_t<F_OF>>;
 } // namespace incom::standard::explorers
