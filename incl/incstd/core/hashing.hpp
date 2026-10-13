@@ -1,6 +1,7 @@
 #pragma once
 
 #include <more_concepts/more_concepts.hpp>
+#include <tuple>
 #include <xxhash.h>
 
 #include <incstd/core/concepts.hpp>
@@ -83,6 +84,14 @@ struct XXH3Hasher {
     _hashTypeX(T &input, XXH3_state_t *state) const {
         this->_hashTypeX(input.first, state);
         this->_hashTypeX(input.second, state);
+    }
+
+    template <concepts::is_some_tuple T>
+    constexpr void
+    _hashTypeX(T &input, XXH3_state_t *state) const {
+        std::apply(
+            [this, state](auto const &...items) { (this->_hashTypeX(items, state), ...); },
+            input);
     }
 
     template <typename T>
