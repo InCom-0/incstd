@@ -10,7 +10,7 @@
 namespace incom::standard::polygons {
 using namespace incom::standard;
 
-template <typename C, bool AllBorders = false>
+template <bool AllBorders = false, typename C>
 requires std::ranges::forward_range<C> &&
          requires(std::ranges::range_reference_t<C> p, std::ranges::range_reference_t<C> q) {
              requires concepts::is_pair_like<decltype(p)>;
