@@ -3,6 +3,8 @@
 #include <concepts>
 #include <expected>
 #include <optional>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -59,6 +61,15 @@ template <typename T>
 concept is_some_pair = is_specialization_of<T, std::pair>;
 template <typename T>
 concept is_some_tuple = is_specialization_of<T, std::tuple>;
+
+template <typename T>
+concept is_pair_like =
+    is_some_pair<T> || (is_some_tuple<T> && std::tuple_size_v<std::remove_cvref_t<T>> == 2) || requires(T const &p) {
+        typename std::tuple_size<std::remove_cvref_t<T>>::type;
+        requires std::tuple_size_v<std::remove_cvref_t<T>> == 2;
+        { std::get<0>(p) };
+        { std::get<1>(p) };
+    };
 
 
 template <typename T>

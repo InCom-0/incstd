@@ -5,10 +5,3 @@
 #include <incstd/incstd_polyfills.hpp>
 #include <incstd/incstd_core.hpp>
 #include <incstd/incstd_web.hpp>
-
-
-
-#ifndef INCOM_INCSTD_NAMESPACE_ALIAS
-#define INCOM_INCSTD_NAMESPACE_ALIAS
-namespace incstd = incom::standard;
-#endif

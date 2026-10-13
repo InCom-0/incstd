@@ -13,6 +13,7 @@
 #include <incstd/core/matrix.hpp>
 #include <incstd/core/numeric.hpp>
 #include <incstd/core/parsers.hpp>
+#include <incstd/core/polygons.hpp>
 #include <incstd/core/random.hpp>
 #include <incstd/core/sequences.hpp>
 #include <incstd/core/solvers.hpp>
