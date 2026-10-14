@@ -486,4 +486,57 @@ FloodFill(std::array<size_t, N> const &, F_A &&, F_OF &&)
 template <size_t N, typename F_A, typename F_OF>
 FloodFill(std::array<size_t, N> const &, std::array<size_t, N> const &, F_A &&, F_OF &&)
     -> FloodFill<N, std::remove_cvref_t<F_A>, std::remove_cvref_t<F_OF>>;
+
+
+template <typename IDX_T, size_t DIMS, typename F_IS_INSIDE, typename F_IS_BORDER, typename F_BEFORE_ACCESS>
+requires(DIMS > 0uz) && std::integral<IDX_T> &&
+        requires(F_IS_INSIDE const &f_is_i, F_IS_BORDER const &f_is_b, F_BEFORE_ACCESS const &f_b_a,
+                 std::array<IDX_T, DIMS> const &pos) {
+            { f_is_i(pos) } -> std::same_as<bool>;
+            { f_is_b(pos) } -> std::same_as<bool>;
+            { f_b_a(pos) } -> std::same_as<void>;
+        }
+auto
+find_posInsideBordered(
+    std::array<IDX_T, DIMS> const &startPOS, std::array<IDX_T, DIMS> const &dimSizes, F_IS_INSIDE const &f_is_i,
+    F_IS_BORDER const &f_is_b, F_BEFORE_ACCESS const &f_b_a = [](std::array<IDX_T, DIMS> const &) -> void {}) {
+
+    for (auto const &dsz : dimSizes) {
+        if (dsz <= 0uz) { assert(false); } // Impossible to search in a 'zero-sized' space
+    }
+
+    std::array<IDX_T, DIMS>                curIDX{};
+    std::optional<std::array<IDX_T, DIMS>> res{};
+
+    auto recu = [&]<size_t LVL>(this auto const &self) {
+        if constexpr (LVL + 1 < DIMS) {
+            for (curIDX[LVL] = startPOS[LVL] + 1; curIDX[LVL] < (startPOS[LVL] + dimSizes[LVL]); ++curIDX[LVL]) {
+                if (self.template operator()<LVL + 1>()) { return true; };
+            }
+            return false;
+        }
+        else {
+            size_t borderCount{};
+            for (curIDX[LVL] = startPOS[LVL] + 1; curIDX[LVL] < (startPOS[LVL] + dimSizes[LVL]); ++curIDX[LVL]) {
+                f_b_a(curIDX);
+                if (f_is_b(curIDX)) { borderCount++; }
+                else if (f_is_i(curIDX) && borderCount % 2) {
+
+                    auto const curIDX_bu = curIDX;
+                    for (curIDX[LVL]++; curIDX[LVL] < (startPOS[LVL] + dimSizes[LVL]); ++curIDX[LVL]) {
+                        f_b_a(curIDX);
+                        if (f_is_b(curIDX)) {
+                            res = curIDX_bu;
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+    };
+
+    recu.template operator()<0uz>();
+    return res;
+};
 } // namespace incom::standard::explorers
