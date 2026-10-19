@@ -7,7 +7,7 @@
 #include <incstd/core/concepts.hpp>
 
 
-namespace incom::standard::polygons {
+namespace incom::standard::solvers::polygons {
 using namespace incom::standard;
 
 template <bool AllBorders = false, typename C>

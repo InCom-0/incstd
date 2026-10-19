@@ -10,18 +10,16 @@
 
 #include <ankerl/unordered_dense.h>
 
-#include <incstd/core/explorers.hpp>
+#include <incstd/solvers/explorers.hpp>
 #include <incstd/core/hashing.hpp>
 #include <incstd/core/matrix.hpp>
 #include <incstd/core/random.hpp>
 #include <incstd/polyfills/mdspan.hpp>
 
 
-namespace incom::standard::solvers {
+namespace incom::standard::solvers::packing {
 using namespace incom::standard;
 
-
-namespace packing {
 
 template <size_t SQSZ>
 requires(SQSZ > 2)
@@ -1168,7 +1166,5 @@ BoxPacker_2D(size_t const area_ySize, size_t const area_xSize,
              std::vector<std::array<std::array<bool, N>, N>> const &shps, std::vector<size_t> const &shps_counts,
              size_t, size_t) -> BoxPacker_2D<N + 2>;
 
-} // namespace packing
 
-
-} // namespace incom::standard::solvers
+} // namespace incom::standard::solvers::packing

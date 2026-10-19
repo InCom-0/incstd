@@ -8,7 +8,7 @@
 #include <incstd/polyfills/mdspan.hpp>
 
 
-namespace incom::standard::explorers {
+namespace incom::standard::solvers::explorers {
 using namespace incom::standard;
 
 namespace _detail {
@@ -539,4 +539,4 @@ find_posInsideBordered(
     recu.template operator()<0uz>();
     return res;
 };
-} // namespace incom::standard::explorers
+} // namespace incom::standard::solvers::explorers
