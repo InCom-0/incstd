@@ -8,7 +8,7 @@
 namespace incstd = incom::standard;
 #endif
 
-#ifndef INCOM_INCSOLV_NAMESPACE_ALIAS
-#define INCOM_INCSOLV_NAMESPACE_ALIAS
-namespace inccol = incom::standard::solvers;
+#ifndef INCOM_INCCONCUR_NAMESPACE_ALIAS
+#define INCOM_INCCONCUR_NAMESPACE_ALIAS
+namespace incconcur = incom::standard::concurrency;
 #endif

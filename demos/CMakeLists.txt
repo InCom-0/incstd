@@ -1,6 +1,6 @@
 add_executable(incstd_demo ${CMAKE_CURRENT_SOURCE_DIR}/demo.cpp)
 target_link_libraries(incstd_demo PRIVATE incstd)
-target_compile_features(incstd_demo PRIVATE cxx_std_23)
+target_compile_features(incstd_demo PRIVATE cxx_std_26)
 
 if(MINGW AND (CMAKE_BUILD_TYPE STREQUAL "Release"))
     target_link_options(incstd_demo PRIVATE -static)

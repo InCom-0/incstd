@@ -5,6 +5,7 @@
 #include <stack>
 #include <vector>
 
+#include <incstd/core/functional.hpp>
 #include <incstd/polyfills/mdspan.hpp>
 
 
@@ -12,20 +13,6 @@ namespace incom::standard::solvers::explorers {
 using namespace incom::standard;
 
 namespace _detail {
-template <size_t N>
-struct NoOpAlwaysTrue {
-    constexpr bool
-    operator()(std::array<size_t, N> const &) const noexcept {
-        return true;
-    }
-};
-
-template <size_t N>
-struct NoOpOnFill {
-    constexpr void
-    operator()(std::array<size_t, N> const &) const noexcept {}
-};
-
 struct BitRef {
     std::uint64_t *m_word{};
     std::uint64_t  m_mask{};
@@ -301,19 +288,18 @@ class FloodFill {
 public:
     using Pos_t = std::array<size_t, Dims>;
 
-    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, _detail::NoOpAlwaysTrue<Dims>{}) {}
+    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, functional::always_true) {}
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
 
-    FloodFill(Pos_t areaSzs, F_Allowed &&f_a)
-        : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), _detail::NoOpOnFill<Dims>{}) {}
+    FloodFill(Pos_t areaSzs, F_Allowed &&f_a) : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), functional::no_op) {}
 
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
     FloodFill(Pos_t areaSzs, F_Allowed &&f_a, F_OnFill &&f_of)
         : FloodFill(areaSzs, {}, std::forward<F_Allowed>(f_a), std::forward<F_OnFill>(f_of)) {}
 
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
-    FloodFill(Pos_t areaSzs, Pos_t areaMins, F_Allowed &&f_a = _detail::NoOpAlwaysTrue<Dims>{},
-              F_OnFill &&f_of = _detail::NoOpOnFill<Dims>{})
+    FloodFill(Pos_t areaSzs, Pos_t areaMins, F_Allowed &&f_a = functional::always_true,
+              F_OnFill &&f_of = functional::no_op)
         : m_areaSzs_perDim(std::move(areaSzs)), m_areaMins_perDim{std::move(areaMins)},
           m_visited_storage(_ctor_total_words(m_areaSzs_perDim), 0),
           m_visited(m_visited_storage.data(), _ctor_make_extents(m_areaSzs_perDim)),
@@ -474,10 +460,10 @@ private:
 
 // Deduction guides
 template <size_t N>
-FloodFill(std::array<size_t, N> const &) -> FloodFill<N, _detail::NoOpAlwaysTrue<N>, _detail::NoOpOnFill<N>>;
+FloodFill(std::array<size_t, N> const &) -> FloodFill<N, functional::always_true_t, functional::no_op_t>;
 
 template <size_t N, typename F_A>
-FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, _detail::NoOpOnFill<N>>;
+FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, functional::no_op_t>;
 
 template <size_t N, typename F_A, typename F_OF>
 FloodFill(std::array<size_t, N> const &, F_A &&, F_OF &&)
