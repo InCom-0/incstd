@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <iterator>
 #include <ranges>
 #include <vector>
+#include <cassert>
 
 
 namespace incom::standard::containers {
@@ -181,6 +183,60 @@ template <typename T>
 RingVector(std::vector<T> &&t) -> RingVector<T>;
 template <typename T>
 RingVector(std::vector<T> const &t) -> RingVector<T>;
+
+
+template <std::unsigned_integral Key, typename Value>
+class RadixHeap {
+public:
+    struct Item {
+        Key   key;
+        Value value;
+    };
+
+    void
+    clear() {
+        for (auto &b : m_buckets) { b.clear(); }
+        m_last = 0;
+        m_size = 0uz;
+    }
+
+    void
+    push(Key key, Value value) {
+        assert(key >= m_last);
+        m_buckets[bucket_of(key)].push_back(Item{key, value});
+        ++m_size;
+    }
+
+    [[nodiscard]] std::optional<Item>
+    pop() {
+        if (m_size == 0uz) { return std::nullopt; }
+        if (m_buckets[0].empty()) {
+            size_t i = 1uz;
+            while (m_buckets[i].empty()) { ++i; }
+
+            auto &src = m_buckets[i];
+            m_last    = std::ranges::min_element(src, {}, &Item::key)->key;
+            for (auto const &item : src) { m_buckets[bucket_of(item.key)].push_back(item); }
+            src.clear();
+        }
+        Item const res = m_buckets[0].back();
+        m_buckets[0].pop_back();
+        --m_size;
+        return res;
+    }
+
+private:
+    static constexpr size_t c_bucketCount = static_cast<size_t>(std::numeric_limits<Key>::digits) + 1uz;
+
+    std::array<std::vector<Item>, c_bucketCount> m_buckets;
+    Key                                          m_last{};
+    size_t                                       m_size{};
+
+    [[nodiscard]] size_t
+    bucket_of(Key key) const noexcept {
+        return static_cast<size_t>(std::bit_width(static_cast<Key>(key ^ m_last)));
+    }
+};
 
 
 } // namespace incom::standard::containers

@@ -1,12 +1,16 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
 #include <deque>
 #include <stack>
 #include <vector>
 
 #include <incstd/core/functional.hpp>
 #include <incstd/polyfills/mdspan.hpp>
+#include <incstd/solvers/directions.hpp>
 
 
 namespace incom::standard::solvers::explorers {
@@ -53,56 +57,7 @@ struct BitAccessor {
 };
 } // namespace _detail
 
-// Helper functions to
-namespace directions {
-// template <size_t Dims, typename INT = long long, INT StepSz = 1LL, size_t Simult = 1uz>
-// requires(std::is_signed<INT>::value) && (Dims > 1uz)
-// inline consteval auto
-// get_dirChanges_simult() {
-//     constexpr size_t posCount = []<size_t... Is>(std::index_sequence<Is...>) {
-//         return (0uz + ... + (static_cast<void>(Is), 2uz));
-//     }(std::make_index_sequence<Dims>{});
-
-
-//     std::array<std::array<long long, 0LL>, Dims> changes;
-
-
-//     std::array<std::array<INT, Dims>, posCount> res{};
-//     for (size_t oneDir = 0uz; oneDir < Dims; ++oneDir) {
-//         res[oneDir * 2][oneDir]       = StepSz;
-//         res[(oneDir * 2) + 1][oneDir] = (-1 * StepSz);
-//     }
-//     return res;
-// }
-
-template <size_t Dims, typename INT = long long, INT StepSz = 1LL>
-requires(std::is_signed<INT>::value) && (Dims > 0uz)
-inline consteval auto
-get_dirChanges() {
-    constexpr size_t posCount = []<size_t... Is>(std::index_sequence<Is...>) {
-        return (0uz + ... + (static_cast<void>(Is), 2uz));
-    }(std::make_index_sequence<Dims>{});
-
-    std::array<std::array<INT, Dims>, posCount> res{};
-    for (size_t oneDir = 0uz; oneDir < Dims; ++oneDir) {
-        res[oneDir * 2][oneDir]       = StepSz;
-        res[(oneDir * 2) + 1][oneDir] = (-1 * StepSz);
-    }
-    return res;
-}
-template <typename INT = long long, INT StepSz = 1LL>
-requires(std::is_signed<INT>::value)
-inline consteval auto
-get_dirChanges_2D() {
-    return get_dirChanges<2uz, INT, StepSz>();
-}
-template <typename INT = long long, INT StepSZ = 1LL>
-requires(std::is_signed<INT>::value)
-inline consteval auto
-get_dirChanges_3D() {
-    return get_dirChanges<3uz, INT, StepSZ>();
-}
-} // namespace directions
+namespace directions = incom::standard::solvers::directions;
 
 
 // ####################################
@@ -483,9 +438,9 @@ requires(DIMS > 0uz) && std::integral<IDX_T> &&
             { f_b_a(pos) } -> std::same_as<void>;
         }
 auto
-find_posInsideBordered(
-    std::array<IDX_T, DIMS> const &startPOS, std::array<IDX_T, DIMS> const &dimSizes, F_IS_INSIDE const &f_is_i,
-    F_IS_BORDER const &f_is_b, F_BEFORE_ACCESS const &f_b_a = [](std::array<IDX_T, DIMS> const &) -> void {}) {
+find_posInsideBordered(std::array<IDX_T, DIMS> const &startPOS, std::array<IDX_T, DIMS> const &dimSizes,
+                       F_IS_INSIDE const &f_is_i, F_IS_BORDER const &f_is_b,
+                       F_BEFORE_ACCESS const &f_b_a = functional::no_op) {
 
     for (auto const &dsz : dimSizes) {
         if (dsz <= 0uz) { assert(false); } // Impossible to search in a 'zero-sized' space
