@@ -276,7 +276,7 @@ struct Path {
 // ####################################
 // ### OPEN LISTS
 // ####################################
-
+namespace open_lists {
 struct OpenEntry {
     Cost_t key; // f = g + h at the time of insertion
     Cell   cell;
@@ -290,7 +290,6 @@ concept OpenList = std::default_initializable<T> && requires(T &t, OpenEntry e, 
     { t.pop() } -> std::same_as<std::optional<OpenEntry>>;
 };
 
-namespace open_lists {
 
 // Plain binary min-heap
 class BinaryHeap {
@@ -385,10 +384,7 @@ static_assert(OpenList<BinaryHeap> && OpenList<FastStack> && OpenList<Radix>);
 } // namespace open_lists
 
 
-// ####################################
-// ### JUMPERS
-// ####################################
-
+namespace jps {
 struct Goal {
     Cell  cell;
     Idx_t idx;
@@ -473,7 +469,10 @@ resolve_jump(std::int16_t jumpDist, Cell c, Dir d, Cell goal) noexcept {
 }
 } // namespace _detail
 
-namespace jumpers {
+
+// ####################################
+// ### JUMPERS
+// ####################################
 
 // Plain Jump Point Search. No preprocessing, jump points are found by scanning the grid.
 class Online {
@@ -533,7 +532,6 @@ private:
         }
     }
 };
-
 
 struct alignas(16) JumpCell {
     std::array<std::int16_t, 8uz>
@@ -607,7 +605,6 @@ private:
         return static_cast<std::int16_t>(prev > 0 ? prev + 1 : prev - 1);
     }
 };
-
 
 // Axis aligned bounding box of the cells that are optimally reachable by moving off in a certain direction
 struct Box {
@@ -756,7 +753,6 @@ private:
 };
 
 static_assert(Jumper<Online> && Jumper<Precomputed> && Jumper<GoalBounded>);
-} // namespace jumpers
 
 
 // ####################################
@@ -765,7 +761,7 @@ static_assert(Jumper<Online> && Jumper<Precomputed> && Jumper<GoalBounded>);
 
 // A* over jump points. The preprocessed data lives in the (immutable) jumper which is shared between copies of the
 // searcher. Every copy owns its own scratch memory, so copies can search concurrently, one searcher cannot.
-template <Jumper J, OpenList OL = open_lists::FastStack>
+template <jps::Jumper J, open_lists::OpenList OL = open_lists::FastStack>
 class JumpPointSearch {
 public:
     // Constructor arguments after the grid are forwarded to the jumper
@@ -863,7 +859,7 @@ private:
             Node        &nn = m_nodes[idx(to)];
             if (nn.stamp != m_stamp || ng < nn.g) {
                 nn = Node{.g = ng, .parent = from, .stamp = m_stamp, .dir = d};
-                m_open.push(OpenEntry{.key = ng + heuristic(to, goal.cell), .cell = to}, key);
+                m_open.push(open_lists::OpenEntry{.key = ng + heuristic(to, goal.cell), .cell = to}, key);
             }
         }
     }
@@ -879,9 +875,13 @@ private:
         return res;
     }
 };
+} // namespace jps
 
-using Jps       = JumpPointSearch<jumpers::Online>;
-using JpsPlus   = JumpPointSearch<jumpers::Precomputed>;
-using JpsPlusGB = JumpPointSearch<jumpers::GoalBounded>;
+template <jps::Jumper J, open_lists::OpenList OL = open_lists::FastStack>
+using JumpPointSearch = jps::JumpPointSearch<J, OL>;
+
+using Jps       = JumpPointSearch<jps::Online>;
+using JpsPlus   = JumpPointSearch<jps::Precomputed>;
+using JpsPlusGB = JumpPointSearch<jps::GoalBounded>;
 
 } // namespace incom::standard::solvers::pathfinders

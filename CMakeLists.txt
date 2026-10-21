@@ -1,23 +1,21 @@
-cmake_minimum_required(VERSION 3.30...4.0)
+cmake_minimum_required(VERSION 3.30...4.4)
 
 project(incstd
 	HOMEPAGE_URL "https://github.com/InCom-0/incstd"
-	VERSION "0.1.0"
+	VERSION "0.2.0"
 	DESCRIPTION "A modest extension of C++ standard library."
 	LANGUAGES CXX
 )
-
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
-option(CPM_USE_LOCAL_PACKAGES
-	"Use local (usually system installed) packages for dependencies."
-	ON
-)
-option(CPM_LOCAL_PACKAGES_ONLY
-	"Forbid the build system from downloading missing dependencies."
-	OFF
-)
+option(CPM_USE_LOCAL_PACKAGES "Use local (usually system installed) packages for dependencies." ON)
+option(CPM_LOCAL_PACKAGES_ONLY "Forbid the build system from downloading missing dependencies." OFF)
+
+# option(INCSTD_BUILD_SHARED_LIB "Build a shared version of incstd" ON)
+option(INCSTD_STAGE_OUTPUTS "Stage build output artifacts into proper directory structure" ON)
+option(INCSTD_BUILD_TESTS "Enables gtest and building of test binaries" ${PROJECT_IS_TOP_LEVEL})
+option(INCSTD_BUILD_BENCHMARKS "Enables nanobench and building of benchmark binaries" ${PROJECT_IS_TOP_LEVEL})
+option(INCSTD_BUILD_DEMOS "Build demo executables" ${PROJECT_IS_TOP_LEVEL})
 
 #####################################################################
 ### Platform specifics + hacks ###
@@ -42,16 +40,16 @@ target_sources(incstd
 	incl
 )
 
+##########################################################################
+### Dependencies and library linking  ###
+##########################################################################
+
+include(CMake_dependencies.cmake) ### Loads and declares the requires external libraries using CMake's FetchContent.
+
 target_compile_definitions(incstd INTERFACE ${INCSTD_MDSPAN_PROVIDER_DEFINE})
 if(TARGET mdspan::mdspan)
 	target_link_libraries(incstd INTERFACE mdspan::mdspan)
 endif()
-
-##########################################################################
-### Dependencies and library linking  ###
-##########################################################################
-include(CMake_dependencies.cmake
-) ### Loads and declares the requires external libraries using CMake's FetchContent.
 
 target_link_libraries(incstd
 	INTERFACE
@@ -64,7 +62,15 @@ target_link_libraries(incstd
 ##########################################################################
 ### Subdirs - tests, demos and the like ###
 ##########################################################################
-option(INCSTD_BUILD_DEMOS "Build demo executables" ${PROJECT_IS_TOP_LEVEL})
+if(INCSTD_BUILD_TESTS)
+	enable_testing()
+	add_subdirectory(tests)
+endif()
+
+if(INCSTD_BUILD_BENCHMARKS)
+	add_subdirectory(benchmark)
+endif()
+
 if(INCSTD_BUILD_DEMOS)
 	add_subdirectory(demos)
 endif()
