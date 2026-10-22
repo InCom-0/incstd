@@ -1,5 +1,6 @@
 #pragma once
 
+#include <incstd/solvers/directions.hpp>
 #include <incstd/solvers/explorers.hpp>
 #include <incstd/solvers/packers.hpp>
 #include <incstd/solvers/pathfinders.hpp>

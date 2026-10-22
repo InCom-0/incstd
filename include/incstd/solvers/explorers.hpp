@@ -242,11 +242,14 @@ class FloodFill {
 public:
     using Pos_t = std::array<size_t, Dims>;
 
-    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, incstd::functional::always_true) {}
+    FloodFill(Pos_t areaSzs)
+        : FloodFill(areaSzs, std::forward<decltype(incstd::functional::always_true)>(incstd::functional::always_true)) {
+    }
+    
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
-
     FloodFill(Pos_t areaSzs, F_Allowed &&f_a)
-        : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), incstd::functional::no_op) {}
+        : FloodFill(areaSzs, std::forward<F_Allowed>(f_a),
+                    std::forward<decltype(incstd::functional::no_op)>(incstd::functional::no_op)) {}
 
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
     FloodFill(Pos_t areaSzs, F_Allowed &&f_a, F_OnFill &&f_of)
@@ -416,10 +419,11 @@ private:
 // Deduction guides
 template <size_t N>
 FloodFill(std::array<size_t, N> const &)
-    -> FloodFill<N, incstd::functional::always_true_t, incstd::functional::no_op_t>;
+    -> FloodFill<N, decltype(incstd::functional::always_true), decltype(incstd::functional::no_op)>;
 
 template <size_t N, typename F_A>
-FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, incstd::functional::no_op_t>;
+FloodFill(std::array<size_t, N> const &, F_A &&)
+    -> FloodFill<N, std::remove_cvref_t<F_A>, decltype(incstd::functional::no_op)>;
 
 template <size_t N, typename F_A, typename F_OF>
 FloodFill(std::array<size_t, N> const &, F_A &&, F_OF &&)
