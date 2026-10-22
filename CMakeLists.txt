@@ -12,7 +12,7 @@ option(CPM_USE_LOCAL_PACKAGES "Use local (usually system installed) packages for
 option(CPM_LOCAL_PACKAGES_ONLY "Forbid the build system from downloading missing dependencies." OFF)
 
 # option(INCSTD_BUILD_SHARED_LIB "Build a shared version of incstd" ON)
-option(INCSTD_STAGE_OUTPUTS "Stage build output artifacts into proper directory structure" ON)
+# option(INCSTD_STAGE_OUTPUTS "Stage build output artifacts into proper directory structure" ON)
 option(INCSTD_BUILD_TESTS "Enables gtest and building of test binaries" ${PROJECT_IS_TOP_LEVEL})
 option(INCSTD_BUILD_BENCHMARKS "Enables nanobench and building of benchmark binaries" ${PROJECT_IS_TOP_LEVEL})
 option(INCSTD_BUILD_DEMOS "Build demo executables" ${PROJECT_IS_TOP_LEVEL})
@@ -37,7 +37,7 @@ target_sources(incstd
 	TYPE
 	HEADERS
 	BASE_DIRS
-	incl
+	include
 )
 
 ##########################################################################
