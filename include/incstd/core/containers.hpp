@@ -5,6 +5,7 @@
 #include <ranges>
 #include <vector>
 #include <cassert>
+#include <bit>
 
 
 namespace incom::standard::containers {
