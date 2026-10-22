@@ -182,7 +182,7 @@ describe(Sample const &s) {
 
 // GoalBounded preprocessing is O(cells^2), only feasible on small grids
 constexpr size_t c_maxCellsGoalBounding = 250uz * 250uz;
-constexpr size_t c_maxCellsBuildBench   = 1000uz * 1000uz;
+constexpr size_t c_maxCellsBuildBench   = 100uz * 100uz;
 
 template <typename S>
 void

@@ -135,6 +135,23 @@ public:
         return in_bounds(p) ? m_regions[static_cast<size_t>(index(to_cell(p)))] : 0u;
     }
 
+    // Flips one cell and updates the regions locally. Returns false if nothing changed (or p is out of bounds).
+    // Region ids stay unique per component but are not stable across calls.
+    [[nodiscard]] bool
+    set_walkable(Pos_t const &p, bool walkable) {
+        if (not in_bounds(p)) { return false; }
+        Idx_t const i = index(to_cell(p));
+        if (walk(i) == walkable) { return false; }
+
+        m_walk[static_cast<size_t>(i)] = walkable ? std::uint8_t{1} : std::uint8_t{0};
+        if (walkable) { region_add(i); }
+        else { region_remove(i); }
+
+        // Every split / fresh region burns an id, a full relabel compacts them
+        if (m_regionSize.size() > (2uz * m_walk.size()) + 16uz) { label_regions(); }
+        return true;
+    }
+
 
     // ### Padded coordinates (used by the search machinery)
 
@@ -200,6 +217,193 @@ private:
     Idx_t                      m_stride{};
     std::vector<std::uint8_t>  m_walk;
     std::vector<std::uint32_t> m_regions;
+    std::vector<std::uint32_t> m_regionSize; // Indexed by region id, [0] unused
+    std::vector<std::uint32_t> m_mark;       // Scratch of split_check, valid when >= m_epoch + 1
+    std::uint32_t              m_epoch{};
+
+    // Regions are 4-connected components, which is exactly the reachability under the no corner cutting rule
+    static constexpr std::array<size_t, 4uz> c_orth{0uz, 2uz, 4uz, 6uz};
+
+    [[nodiscard]] std::uint32_t
+    new_region() {
+        m_regionSize.push_back(0u);
+        return static_cast<std::uint32_t>(m_regionSize.size() - 1uz);
+    }
+
+    // Relabels the component of seed from 'from' to 'to'. Cost is the size of that component.
+    std::uint32_t
+    relabel(Idx_t seed, std::uint32_t from, std::uint32_t to, std::array<Idx_t, 8> const &off) {
+        std::vector<Idx_t> stack{seed};
+        m_regions[static_cast<size_t>(seed)] = to;
+        std::uint32_t count{};
+        while (not stack.empty()) {
+            Idx_t const i = stack.back();
+            stack.pop_back();
+            ++count;
+            for (size_t const d : c_orth) {
+                Idx_t const n = i + off[d];
+                if (m_regions[static_cast<size_t>(n)] == from) {
+                    m_regions[static_cast<size_t>(n)] = to;
+                    stack.push_back(n);
+                }
+            }
+        }
+        return count;
+    }
+
+    // Cell i just became walkable: join / merge the regions of its orthogonal neighbours
+    void
+    region_add(Idx_t i) {
+        auto const                     off = offsets();
+        std::array<std::uint32_t, 4uz> ids{};
+        std::array<Idx_t, 4uz>         seeds{};
+        size_t                         count{};
+        for (size_t const d : c_orth) {
+            Idx_t const         n = i + off[d];
+            std::uint32_t const r = m_regions[static_cast<size_t>(n)];
+            if (r != 0u && std::find(ids.begin(), ids.begin() + static_cast<std::ptrdiff_t>(count), r) ==
+                               ids.begin() + static_cast<std::ptrdiff_t>(count)) {
+                ids[count]   = r;
+                seeds[count] = n;
+                ++count;
+            }
+        }
+
+        if (count == 0uz) {
+            std::uint32_t const fresh         = new_region();
+            m_regions[static_cast<size_t>(i)] = fresh;
+            m_regionSize[fresh]               = 1u;
+            return;
+        }
+
+        size_t target = 0uz; // Keep the largest so that only the smaller ones get relabelled
+        for (size_t k = 1uz; k < count; ++k) {
+            if (m_regionSize[ids[k]] > m_regionSize[ids[target]]) { target = k; }
+        }
+        std::uint32_t const t             = ids[target];
+        m_regions[static_cast<size_t>(i)] = t;
+        ++m_regionSize[t];
+        for (size_t k = 0uz; k < count; ++k) {
+            if (k == target) { continue; }
+            m_regionSize[t]      += relabel(seeds[k], ids[k], t, off);
+            m_regionSize[ids[k]]  = 0u;
+        }
+    }
+
+    // Cell i just became blocked: its region may have fallen apart
+    void
+    region_remove(Idx_t i) {
+        std::uint32_t const r             = m_regions[static_cast<size_t>(i)];
+        m_regions[static_cast<size_t>(i)] = 0u;
+        --m_regionSize[r];
+
+        auto const             off = offsets();
+        std::array<Idx_t, 4uz> seeds{};
+        size_t                 count{};
+        for (size_t const d : c_orth) {
+            if (walk(i + off[d])) { seeds[count++] = i + off[d]; }
+        }
+        if (count < 2uz || ring_connected(i, off)) { return; }
+        split_check(seeds, count, r, off);
+    }
+
+    // True if all walkable orthogonal neighbours of i are linked through the walkable cells of its 8-ring alone.
+    // Consecutive ring cells are 4-adjacent, so that is a single cyclic run of walkable ring cells.
+    [[nodiscard]] bool
+    ring_connected(Idx_t i, std::array<Idx_t, 8> const &off) const noexcept {
+        std::array<bool, 8uz> w{};
+        for (size_t k = 0uz; k < 8uz; ++k) { w[k] = walk(i + off[k]); }
+
+        size_t first = 0uz;
+        while (not w[first]) { first += 2uz; } // Callers guarantee two walkable orthogonal neighbours
+
+        std::array<bool, 8uz> reached{};
+        for (size_t const step : {1uz, 7uz}) {
+            size_t k = first;
+            for (size_t n = 0uz; n < 8uz && w[k]; ++n, k = (k + step) & 7uz) { reached[k] = true; }
+        }
+        return std::ranges::all_of(c_orth, [&](size_t k) { return not w[k] || reached[k]; });
+    }
+
+    // Lockstep flood from every seed. Floods that touch are the same component. A flood that runs dry while others
+    // are still alive is a complete split-off component and gets a fresh id, so the cost is bounded by the smaller
+    // side.
+    void
+    split_check(std::array<Idx_t, 4uz> const &seeds, size_t n, std::uint32_t region, std::array<Idx_t, 8> const &off) {
+        if (m_mark.size() != m_walk.size() || m_epoch > std::numeric_limits<std::uint32_t>::max() - 16u) {
+            m_mark.assign(m_walk.size(), 0u);
+            m_epoch = 0u;
+        }
+        m_epoch                   += 8u;
+        std::uint32_t const epoch  = m_epoch;
+
+        struct Flood {
+            std::vector<Idx_t> cells;    // Doubles as the BFS queue
+            size_t             head{};
+            size_t             parent{}; // Union-find over the flood indices
+            bool               done{};
+        };
+        std::array<Flood, 4uz> fl{};
+        for (size_t k = 0uz; k < n; ++k) {
+            fl[k].cells                           = {seeds[k]};
+            fl[k].parent                          = k;
+            m_mark[static_cast<size_t>(seeds[k])] = epoch + 1u + static_cast<std::uint32_t>(k);
+        }
+
+        auto const find = [&](size_t k) {
+            while (fl[k].parent != k) { k = fl[k].parent; }
+            return k;
+        };
+
+        size_t groupsLeft = n;
+        while (groupsLeft > 1uz) {
+            for (size_t k = 0uz; k < n && groupsLeft > 1uz; ++k) {
+                Flood &f = fl[k];
+                if (f.done || f.head == f.cells.size()) { continue; }
+
+                Idx_t const i = f.cells[f.head++];
+                for (size_t const d : c_orth) {
+                    Idx_t const nb = i + off[d];
+                    if (not walk(nb)) { continue; }
+                    std::uint32_t const m = m_mark[static_cast<size_t>(nb)];
+                    if (m <= epoch) {
+                        m_mark[static_cast<size_t>(nb)] = epoch + 1u + static_cast<std::uint32_t>(k);
+                        f.cells.push_back(nb);
+                    }
+                    else {
+                        size_t const a = find(k);
+                        size_t const b = find(static_cast<size_t>(m - epoch - 1u));
+                        if (a != b) {
+                            fl[b].parent = a;
+                            --groupsLeft;
+                        }
+                    }
+                }
+            }
+
+            // A group is closed once all of its floods are exhausted
+            for (size_t g = 0uz; g < n && groupsLeft > 1uz; ++g) {
+                if (fl[g].done || find(g) != g) { continue; }
+                bool exhausted = true;
+                for (size_t k = 0uz; k < n; ++k) {
+                    exhausted = exhausted && (fl[k].done || find(k) != g || fl[k].head == fl[k].cells.size());
+                }
+                if (not exhausted) { continue; }
+
+                std::uint32_t const fresh = new_region();
+                std::uint32_t       count{};
+                for (size_t k = 0uz; k < n; ++k) {
+                    if (fl[k].done || find(k) != g) { continue; }
+                    for (Idx_t const c : fl[k].cells) { m_regions[static_cast<size_t>(c)] = fresh; }
+                    count      += static_cast<std::uint32_t>(fl[k].cells.size());
+                    fl[k].done  = true;
+                }
+                m_regionSize[fresh]   = count;
+                m_regionSize[region] -= count;
+                --groupsLeft;
+            }
+        }
+    }
 
     // Padded border keeps the flood fill from ever probing outside of its area
     void
@@ -221,6 +425,11 @@ private:
                     fill.execute_fill(p);
                 }
             }
+        }
+
+        m_regionSize.assign(static_cast<size_t>(current) + 1uz, 0u);
+        for (std::uint32_t const r : m_regions) {
+            if (r != 0u) { ++m_regionSize[r]; }
         }
     }
 };
@@ -400,6 +609,12 @@ concept Jumper = requires(J const &j, Cell c, Dir d, Goal const &g) {
     { j.jump(c, d, g) } -> std::same_as<std::uint32_t>;
 };
 
+// A jumper that can flip single cells of its grid and keep its preprocessed data valid
+template <typename J>
+concept MutableJumper = Jumper<J> && std::copy_constructible<J> && requires(J &j, Pos_t p, bool walkable) {
+    { j.set_walkable(p, walkable) } -> std::same_as<bool>;
+};
+
 namespace _detail {
 
 struct ExploreRule {
@@ -541,37 +756,25 @@ struct alignas(16) JumpCell {
 // JPS+. For every cell and direction the distance to the next jump point is precomputed in O(cells).
 class Precomputed {
 public:
-    explicit Precomputed(Grid grid) : m_grid(std::move(grid)), m_jump(m_grid.padded_size()) {
-        auto const off = m_grid.offsets();
-
+    explicit Precomputed(Grid grid) : m_grid(std::move(grid)), m_off(m_grid.offsets()), m_jump(m_grid.padded_size()) {
         // Diagonals look at the cardinal distances of their neighbours, so those go first
         for (Dir const d : {Dir::Down, Dir::Right, Dir::Up, Dir::Left}) {
-            m_grid.for_each_walkable_toward(d, [&](Idx_t i) {
-                Idx_t const        n = i + off[ix(d)];
-                std::int16_t const v = [&]() -> std::int16_t {
-                    if (not m_grid.walk(n)) { return 0; }
-                    if (_detail::has_forced_neighbour(m_grid, off, n, d)) { return 1; }
-                    return extended(m_jump[static_cast<size_t>(n)].dist[ix(d)]);
-                }();
-                m_jump[static_cast<size_t>(i)].dist[ix(d)] = v;
-            });
+            m_grid.for_each_walkable_toward(
+                d, [&](Idx_t i) { m_jump[static_cast<size_t>(i)].dist[ix(d)] = compute_cardinal(i, d); });
         }
         for (Dir const d : {Dir::DownRight, Dir::DownLeft, Dir::UpRight, Dir::UpLeft}) {
-            Dir const vd = vertical_of(d);
-            Dir const hd = horizontal_of(d);
-            m_grid.for_each_walkable_toward(d, [&](Idx_t i) {
-                Idx_t const        n = i + off[ix(d)];
-                std::int16_t const v = [&]() -> std::int16_t {
-                    if (not(m_grid.walk(n) && m_grid.walk(i + off[ix(vd)]) && m_grid.walk(i + off[ix(hd)]))) {
-                        return 0;
-                    }
-                    auto const &dn = m_jump[static_cast<size_t>(n)].dist;
-                    if (dn[ix(vd)] > 0 || dn[ix(hd)] > 0) { return 1; }
-                    return extended(dn[ix(d)]);
-                }();
-                m_jump[static_cast<size_t>(i)].dist[ix(d)] = v;
-            });
+            m_grid.for_each_walkable_toward(
+                d, [&](Idx_t i) { m_jump[static_cast<size_t>(i)].dist[ix(d)] = compute_diagonal(i, d); });
         }
+    }
+
+    // Flips one cell and repairs the jump table locally. Returns false if nothing changed.
+    // Must not run concurrently with queries on this object.
+    bool
+    set_walkable(Pos_t p, bool walkable) {
+        if (not m_grid.set_walkable(p, walkable)) { return false; }
+        repair_around(m_grid.index(m_grid.to_cell(p)));
+        return true;
     }
 
     [[nodiscard]] Grid const &
@@ -597,7 +800,65 @@ public:
 
 private:
     Grid                  m_grid;
+    std::array<Idx_t, 8>  m_off;
     std::vector<JumpCell> m_jump;
+
+    // Value of dist[d] for cell i given the current grid and the already valid dist[d] of its successor
+    [[nodiscard]] std::int16_t
+    compute_cardinal(Idx_t i, Dir d) const noexcept {
+        if (not m_grid.walk(i)) { return 0; }
+        Idx_t const n = i + m_off[ix(d)];
+        if (not m_grid.walk(n)) { return 0; }
+        if (_detail::has_forced_neighbour(m_grid, m_off, n, d)) { return 1; }
+        return extended(m_jump[static_cast<size_t>(n)].dist[ix(d)]);
+    }
+
+    [[nodiscard]] std::int16_t
+    compute_diagonal(Idx_t i, Dir d) const noexcept {
+        if (not m_grid.walk(i)) { return 0; }
+        Dir const   vd = vertical_of(d);
+        Dir const   hd = horizontal_of(d);
+        Idx_t const n  = i + m_off[ix(d)];
+        if (not(m_grid.walk(n) && m_grid.walk(i + m_off[ix(vd)]) && m_grid.walk(i + m_off[ix(hd)]))) { return 0; }
+        auto const &dn = m_jump[static_cast<size_t>(n)].dist;
+        if (dn[ix(vd)] > 0 || dn[ix(hd)] > 0) { return 1; }
+        return extended(dn[ix(d)]);
+    }
+
+    // Every entry reads the grid within one cell of its own cell, so only the 3x3 around x has stale inputs.
+    // From there a change travels backwards along the direction and stops at the first unchanged entry.
+    void
+    repair_around(Idx_t x) {
+        std::array<Idx_t, 9uz> seeds{x};
+        for (size_t d = 0uz; d < 8uz; ++d) { seeds[d + 1uz] = x + m_off[d]; }
+
+        std::vector<Idx_t> work;
+        std::vector<Idx_t> changedCardinal;
+        auto const         propagate = [&](Dir d, bool cardinal) {
+            while (not work.empty()) {
+                Idx_t const i = work.back();
+                work.pop_back();
+                std::int16_t const v    = cardinal ? compute_cardinal(i, d) : compute_diagonal(i, d);
+                auto              &slot = m_jump[static_cast<size_t>(i)].dist[ix(d)];
+                if (v == slot) { continue; }
+                slot = v;
+                if (cardinal) { changedCardinal.push_back(i); }
+                work.push_back(i - m_off[ix(d)]);
+            }
+        };
+
+        for (Dir const d : {Dir::Down, Dir::Right, Dir::Up, Dir::Left}) {
+            work.assign(seeds.begin(), seeds.end());
+            propagate(d, true);
+        }
+        for (Dir const d : {Dir::DownRight, Dir::DownLeft, Dir::UpRight, Dir::UpLeft}) {
+            work.assign(seeds.begin(), seeds.end());
+            for (Idx_t const c : changedCardinal) {
+                work.push_back(c - m_off[ix(d)]);
+            } // Diagonal reads cardinals of its successor
+            propagate(d, false);
+        }
+    }
 
     // One more step away from the same jump point / wall
     [[nodiscard]] static constexpr std::int16_t
@@ -753,6 +1014,7 @@ private:
 };
 
 static_assert(Jumper<Online> && Jumper<Precomputed> && Jumper<GoalBounded>);
+static_assert(MutableJumper<Precomputed> && not MutableJumper<Online> && not MutableJumper<GoalBounded>);
 
 
 // ####################################
@@ -767,12 +1029,21 @@ public:
     // Constructor arguments after the grid are forwarded to the jumper
     template <typename... Args>
     explicit JumpPointSearch(Grid grid, Args &&...args)
-        : m_jumper(std::make_shared<J const>(std::move(grid), std::forward<Args>(args)...)),
+        : m_jumper(std::make_shared<J>(std::move(grid), std::forward<Args>(args)...)),
           m_nodes(m_jumper->grid().padded_size()) {}
 
     [[nodiscard]] Grid const &
     grid() const noexcept {
         return m_jumper->grid();
+    }
+
+    // Returns false if the cell was already in that state. Copies of this searcher keep their own snapshot.
+    bool
+    set_walkable(Pos_t p, bool walkable)
+    requires jps::MutableJumper<J>
+    {
+        if (m_jumper.use_count() > 1) { m_jumper = std::make_shared<J>(*m_jumper); }
+        return m_jumper->set_walkable(p, walkable);
     }
 
     // Number of nodes expanded by the last search
@@ -819,11 +1090,24 @@ private:
         Dir           dir;
     };
 
-    std::shared_ptr<J const> m_jumper;
-    std::vector<Node>        m_nodes;
-    OL                       m_open;
-    std::uint32_t            m_stamp{};
-    size_t                   m_expanded{};
+    // template <typename T>
+    // struct m_jumper_t {
+    //     using type = std::shared_ptr<J> const;
+    // };
+
+    // template <typename T>
+    // requires jps::MutableJumper<T>
+    // struct m_jumper_t<T> {
+    //     using type = std::shared_ptr<J>;
+    // };
+
+
+    // TODO: Why exactly are we having a shared pointer here? Is that really necessary / good for the anticipated usecase?
+    std::shared_ptr<J> m_jumper; // Non-const so set_walkable can mutate it
+    std::vector<Node>  m_nodes;
+    OL                 m_open;
+    std::uint32_t      m_stamp{};
+    size_t             m_expanded{};
 
     [[nodiscard]] size_t
     idx(Cell c) const noexcept {

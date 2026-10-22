@@ -988,3 +988,115 @@ TEST(PathfindersBig, JpsPlusConcurrentCopies) {
     }
     for (size_t t = 0uz; t < threads; ++t) { EXPECT_EQ(results[t], expected) << "thread " << t; }
 }
+
+// ####################################
+// ### MUTATION
+// ####################################
+
+namespace {
+// a ~ b in one labelling iff a ~ b in the other
+bool
+same_partition(Grid const &a, Grid const &b) {
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> pairs;
+    for (size_t r = 0uz; r < a.rows(); ++r) {
+        for (size_t c = 0uz; c < a.cols(); ++c) {
+            auto const ra = a.region_of(Pos_t{r, c});
+            auto const rb = b.region_of(Pos_t{r, c});
+            if ((ra == 0u) != (rb == 0u)) { return false; }
+            if (ra != 0u) { pairs.emplace_back(ra, rb); }
+        }
+    }
+    std::ranges::sort(pairs);
+    pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+    // A bijection has every id exactly once on each side
+    for (size_t i = 1uz; i < pairs.size(); ++i) {
+        if (pairs[i].first == pairs[i - 1uz].first) { return false; }
+    }
+    std::ranges::sort(pairs, {}, &std::pair<std::uint32_t, std::uint32_t>::second);
+    for (size_t i = 1uz; i < pairs.size(); ++i) {
+        if (pairs[i].second == pairs[i - 1uz].second) { return false; }
+    }
+    return true;
+}
+
+void
+expect_mutation_matches_rebuild(size_t rows, size_t cols, double density, unsigned seed, int toggles) {
+    std::mt19937 rng(seed);
+    pf::jps::Precomputed live(make_random_grid(rng, rows, cols, density));
+
+    std::uniform_int_distribution<size_t> pickR(0uz, rows - 1uz);
+    std::uniform_int_distribution<size_t> pickC(0uz, cols - 1uz);
+    for (int t = 0; t < toggles; ++t) {
+        Pos_t const p{pickR(rng), pickC(rng)};
+        bool const  changed = live.set_walkable(p, not live.grid().is_walkable(p));
+        ASSERT_TRUE(changed);
+
+        auto const fresh = Grid::create(Pos_t{rows, cols}, [&](Pos_t const &q) { return live.grid().is_walkable(q); });
+        pf::jps::Precomputed const rebuilt(fresh.value());
+        ASSERT_TRUE(same_partition(live.grid(), rebuilt.grid())) << "regions, toggle " << t;
+        for (size_t r = 0uz; r < rows; ++r) {
+            for (size_t c = 0uz; c < cols; ++c) {
+                Cell const cell = live.grid().to_cell(Pos_t{r, c});
+                for (size_t d = 0uz; d < 8uz; ++d) {
+                    ASSERT_EQ(live.distance(cell, static_cast<dir::Dir>(d)),
+                              rebuilt.distance(cell, static_cast<dir::Dir>(d)))
+                        << "toggle " << t << " cell " << r << "," << c << " dir " << d;
+                }
+            }
+        }
+    }
+}
+} // namespace
+
+TEST(PathfindersMutation, RepairMatchesRebuildSparse) { expect_mutation_matches_rebuild(30uz, 30uz, 0.1, 1u, 300); }
+
+TEST(PathfindersMutation, RepairMatchesRebuildDense) { expect_mutation_matches_rebuild(30uz, 25uz, 0.45, 2u, 300); }
+
+TEST(PathfindersMutation, SetWalkableReturnsFalseWhenUnchangedOrOutOfBounds) {
+    pf::JpsPlus s(make_grid({"..", ".#"}));
+    EXPECT_FALSE(s.set_walkable(Pos_t{0uz, 0uz}, true));
+    EXPECT_FALSE(s.set_walkable(Pos_t{1uz, 1uz}, false));
+    EXPECT_FALSE(s.set_walkable(Pos_t{5uz, 5uz}, true));
+    EXPECT_TRUE(s.set_walkable(Pos_t{1uz, 1uz}, true));
+}
+
+TEST(PathfindersMutation, SplitAndMergeChangeReachability) {
+    pf::JpsPlus s(make_grid({"...", "...", "..."}));
+    ASSERT_TRUE(s.find_path(Pos_t{0uz, 0uz}, Pos_t{2uz, 2uz}).has_value());
+
+    for (size_t r = 0uz; r < 3uz; ++r) { ASSERT_TRUE(s.set_walkable(Pos_t{r, 1uz}, false)); }
+    auto const cut = s.find_path(Pos_t{0uz, 0uz}, Pos_t{2uz, 2uz});
+    ASSERT_FALSE(cut.has_value());
+    EXPECT_EQ(cut.error(), PathError::unreachable);
+
+    ASSERT_TRUE(s.set_walkable(Pos_t{1uz, 1uz}, true));
+    EXPECT_TRUE(s.find_path(Pos_t{0uz, 0uz}, Pos_t{2uz, 2uz}).has_value());
+}
+
+TEST(PathfindersMutation, CopiesKeepTheirSnapshot) {
+    pf::JpsPlus a(make_grid({"...", "...", "..."}));
+    pf::JpsPlus b = a;
+    for (size_t r = 0uz; r < 3uz; ++r) { ASSERT_TRUE(b.set_walkable(Pos_t{r, 1uz}, false)); }
+
+    EXPECT_TRUE(a.find_path(Pos_t{0uz, 0uz}, Pos_t{2uz, 2uz}).has_value());
+    EXPECT_FALSE(b.find_path(Pos_t{0uz, 0uz}, Pos_t{2uz, 2uz}).has_value());
+}
+
+TEST(PathfindersMutation, MutatedSearchMatchesReference) {
+    std::mt19937 rng(77u);
+    pf::JpsPlus  s(make_random_grid(rng, 40uz, 40uz, 0.25));
+
+    std::uniform_int_distribution<size_t> pick(0uz, 39uz);
+    for (int t = 0; t < 60; ++t) {
+        Pos_t const p{pick(rng), pick(rng)};
+        (void)s.set_walkable(p, not s.grid().is_walkable(p));
+
+        Pos_t const a{pick(rng), pick(rng)};
+        Pos_t const b{pick(rng), pick(rng)};
+        if (not s.grid().is_walkable(a) || not s.grid().is_walkable(b)) { continue; }
+        auto const expected = reference_cost(s.grid(), a, b);
+        auto const res      = s.find_path(a, b);
+        ASSERT_EQ(res.has_value(), expected.has_value());
+        if (res) { EXPECT_EQ(res->cost, *expected); }
+    }
+}
