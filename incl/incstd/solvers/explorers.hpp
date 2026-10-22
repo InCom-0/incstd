@@ -14,7 +14,8 @@
 
 
 namespace incom::standard::solvers::explorers {
-using namespace incom::standard;
+namespace incstd     = incom::standard;
+namespace directions = incom::standard::solvers::directions;
 
 namespace _detail {
 struct BitRef {
@@ -56,8 +57,6 @@ struct BitAccessor {
     }
 };
 } // namespace _detail
-
-namespace directions = incom::standard::solvers::directions;
 
 
 // ####################################
@@ -243,18 +242,19 @@ class FloodFill {
 public:
     using Pos_t = std::array<size_t, Dims>;
 
-    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, functional::always_true) {}
+    FloodFill(Pos_t areaSzs) : FloodFill(areaSzs, incstd::functional::always_true) {}
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
 
-    FloodFill(Pos_t areaSzs, F_Allowed &&f_a) : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), functional::no_op) {}
+    FloodFill(Pos_t areaSzs, F_Allowed &&f_a)
+        : FloodFill(areaSzs, std::forward<F_Allowed>(f_a), incstd::functional::no_op) {}
 
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
     FloodFill(Pos_t areaSzs, F_Allowed &&f_a, F_OnFill &&f_of)
         : FloodFill(areaSzs, {}, std::forward<F_Allowed>(f_a), std::forward<F_OnFill>(f_of)) {}
 
     // F_allowed is a unary functor(lambda) taking std::array<size_t, Dims> const &
-    FloodFill(Pos_t areaSzs, Pos_t areaMins, F_Allowed &&f_a = functional::always_true,
-              F_OnFill &&f_of = functional::no_op)
+    FloodFill(Pos_t areaSzs, Pos_t areaMins, F_Allowed &&f_a = incstd::functional::always_true,
+              F_OnFill &&f_of = incstd::functional::no_op)
         : m_areaSzs_perDim(std::move(areaSzs)), m_areaMins_perDim{std::move(areaMins)},
           m_visited_storage(_ctor_total_words(m_areaSzs_perDim), 0),
           m_visited(m_visited_storage.data(), _ctor_make_extents(m_areaSzs_perDim)),
@@ -415,10 +415,11 @@ private:
 
 // Deduction guides
 template <size_t N>
-FloodFill(std::array<size_t, N> const &) -> FloodFill<N, functional::always_true_t, functional::no_op_t>;
+FloodFill(std::array<size_t, N> const &)
+    -> FloodFill<N, incstd::functional::always_true_t, incstd::functional::no_op_t>;
 
 template <size_t N, typename F_A>
-FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, functional::no_op_t>;
+FloodFill(std::array<size_t, N> const &, F_A &&) -> FloodFill<N, std::remove_cvref_t<F_A>, incstd::functional::no_op_t>;
 
 template <size_t N, typename F_A, typename F_OF>
 FloodFill(std::array<size_t, N> const &, F_A &&, F_OF &&)
@@ -440,7 +441,7 @@ requires(DIMS > 0uz) && std::integral<IDX_T> &&
 auto
 find_posInsideBordered(std::array<IDX_T, DIMS> const &startPOS, std::array<IDX_T, DIMS> const &dimSizes,
                        F_IS_INSIDE const &f_is_i, F_IS_BORDER const &f_is_b,
-                       F_BEFORE_ACCESS const &f_b_a = functional::no_op) {
+                       F_BEFORE_ACCESS const &f_b_a = incstd::functional::no_op) {
 
     for (auto const &dsz : dimSizes) {
         if (dsz <= 0uz) { assert(false); } // Impossible to search in a 'zero-sized' space

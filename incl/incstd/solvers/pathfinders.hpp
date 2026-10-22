@@ -1102,7 +1102,8 @@ private:
     // };
 
 
-    // TODO: Why exactly are we having a shared pointer here? Is that really necessary / good for the anticipated usecase?
+    // TODO: Why exactly are we having a shared pointer here? Is that really necessary / good for the anticipated
+    // usecase?
     std::shared_ptr<J> m_jumper; // Non-const so set_walkable can mutate it
     std::vector<Node>  m_nodes;
     OL                 m_open;
