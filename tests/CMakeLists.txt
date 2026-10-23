@@ -9,7 +9,7 @@
 ######################################################################
 
 add_executable(incstd_tests)
-target_compile_features(incstd_tests PRIVATE cxx_std_26)
+target_compile_features(incstd_tests PRIVATE cxx_std_23)
 target_sources(incstd_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinders.cpp)
 
 target_sources(incstd_tests

@@ -7,7 +7,7 @@
 ######################################################################
 
 add_executable(incstd_bench)
-target_compile_features(incstd_bench PRIVATE cxx_std_26)
+target_compile_features(incstd_bench PRIVATE cxx_std_23)
 target_sources(incstd_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinders.cpp)
 
 target_sources(incstd_bench
